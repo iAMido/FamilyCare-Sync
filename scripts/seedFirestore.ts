@@ -1,75 +1,176 @@
 /**
- * Run once to seed initial Preset documents in Firestore.
+ * Seeds Firestore with real presets and known appointments.
  *
- * Usage:
- *   1. Install ts-node: npm install -g ts-node
- *   2. Create a .env file with EXPO_PUBLIC_FIREBASE_* vars
- *   3. ts-node scripts/seedFirestore.ts
+ * Setup:
+ *   1. Save your Google Service Account JSON as service-account.json in the project root
+ *   2. npm install -D ts-node
+ *   3. npx ts-node scripts/seedFirestore.ts
  */
-import { initializeApp } from 'firebase/app';
-import { getFirestore, setDoc, doc } from 'firebase/firestore';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
+import { cert, initializeApp } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import * as path from 'path';
 
 const app = initializeApp({
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  credential: cert(path.resolve(__dirname, '../../service-account.json')),
+  projectId: 'familycare-sync',
 });
 
 const db = getFirestore(app);
 
+// ── Presets ───────────────────────────────────────────────────────────────────
+
 const presets = [
   {
+    id: 'karna',
+    name: 'טיפול הקרנה',
+    defaultLocation: 'מכון רדיותרפיה',
+    icon: '☢️',
+    automatedReminders: [
+      { offsetHours: -24, message: 'תזכורת: טיפול הקרנה מחר' },
+      { offsetHours: -2,  message: 'טיפול הקרנה בעוד שעתיים – התכוננות לצאת' },
+    ],
+  },
+  {
     id: 'chemo',
-    name: 'Chemotherapy',
-    defaultLocation: 'Oncology Department, Floor 3',
+    name: 'טיפול כימו',
+    defaultLocation: 'מחלקת אונקולוגיה',
     icon: '💉',
     automatedReminders: [
-      { offsetHours: -48, message: 'Blood tests required today for Thursday\'s chemo session' },
-      { offsetHours: -2, message: 'Chemo session in 2 hours — heading to hospital soon' },
+      { offsetHours: -48, message: 'תזכורת: נדרשת בדיקת דם היום לפני הכימו בעוד יומיים' },
+      { offsetHours: -2,  message: 'טיפול כימו בעוד שעתיים – בדוק שיש ליווי' },
     ],
   },
   {
     id: 'blood-test',
-    name: 'Blood Test',
-    defaultLocation: 'Lab, Floor 1',
+    name: 'בדיקת דם',
+    defaultLocation: 'מעבדה, קומה 1',
     icon: '🩸',
     automatedReminders: [
-      { offsetHours: -12, message: 'Blood test tomorrow — fast from midnight' },
-      { offsetHours: -1, message: 'Blood test in 1 hour' },
+      { offsetHours: -12, message: 'בדיקת דם מחר בבוקר – צום מחצות' },
+      { offsetHours: -1,  message: 'בדיקת דם בעוד שעה' },
     ],
   },
   {
-    id: 'doctor-consult',
-    name: 'Doctor Consult',
-    defaultLocation: 'Outpatient Clinic',
+    id: 'injection',
+    name: 'תור לקבלת זריקה',
+    defaultLocation: 'מרפאה חוץ',
+    icon: '💊',
+    automatedReminders: [
+      { offsetHours: -2, message: 'זריקה בעוד שעתיים' },
+    ],
+  },
+  {
+    id: 'oncologist',
+    name: 'תור לאונקולוג',
+    defaultLocation: 'מרפאת אונקולוגיה',
     icon: '🩺',
     automatedReminders: [
-      { offsetHours: -24, message: 'Doctor consultation tomorrow — prepare questions' },
+      { offsetHours: -24, message: 'תור לאונקולוג מחר – הכינו שאלות ועדכוני מצב' },
+      { offsetHours: -2,  message: 'תור לאונקולוג בעוד שעתיים' },
     ],
   },
   {
-    id: 'radiation',
-    name: 'Radiation Therapy',
-    defaultLocation: 'Radiotherapy Center, Floor B1',
-    icon: '☢️',
+    id: 'nurse',
+    name: 'אחות מתאמת',
+    defaultLocation: 'מרכז רפואי',
+    icon: '👩‍⚕️',
     automatedReminders: [
-      { offsetHours: -2, message: 'Radiation session in 2 hours' },
+      { offsetHours: -24, message: 'פגישה עם האחות המתאמת מחר' },
+    ],
+  },
+  {
+    id: 'radiation-sim',
+    name: 'סימולציה קרינה',
+    defaultLocation: 'מכון רדיותרפיה',
+    icon: '🔬',
+    automatedReminders: [
+      { offsetHours: -24, message: 'סימולציה לקרינה מחר – הגיעו בזמן' },
+      { offsetHours: -2,  message: 'סימולציה קרינה בעוד שעתיים' },
+    ],
+  },
+  {
+    id: 'radiotherapy',
+    name: 'מכון רדיותרפיה',
+    defaultLocation: 'מכון רדיותרפיה',
+    icon: '🏥',
+    automatedReminders: [
+      { offsetHours: -2, message: 'טיפול במכון רדיותרפיה בעוד שעתיים' },
     ],
   },
 ];
 
+// ── Known upcoming treatments ─────────────────────────────────────────────────
+// Times are Israel Standard Time (UTC+3 in summer)
+
+function israelTime(year: number, month: number, day: number, hour: number, minute: number): Timestamp {
+  // Israel summer time = UTC+3
+  const utcMs = Date.UTC(year, month - 1, day, hour - 3, minute);
+  return Timestamp.fromMillis(utcMs);
+}
+
+const treatments = [
+  {
+    id: 'treat-nurse-may11',
+    presetId: 'nurse',
+    title: 'אחות מתאמת',
+    location: 'מרכז רפואי',
+    dateTime: israelTime(2026, 5, 11, 11, 0),
+    escortId: null,
+    status: 'scheduled',
+    summary: null,
+    calendarEventId: null,
+  },
+  {
+    id: 'treat-radiotherapy-may18',
+    presetId: 'radiotherapy',
+    title: 'מכון רדיותרפיה',
+    location: 'מכון רדיותרפיה',
+    dateTime: israelTime(2026, 5, 18, 15, 30),
+    escortId: null,
+    status: 'scheduled',
+    summary: null,
+    calendarEventId: null,
+  },
+  {
+    id: 'treat-radiation-sim-may20',
+    presetId: 'radiation-sim',
+    title: 'סימולציה קרינה',
+    location: 'מכון רדיותרפיה',
+    dateTime: israelTime(2026, 5, 20, 16, 30),
+    escortId: null,
+    status: 'scheduled',
+    summary: null,
+    calendarEventId: null,
+  },
+  {
+    id: 'treat-oncologist-jun22',
+    presetId: 'oncologist',
+    title: 'תור לאונקולוג',
+    location: 'מרפאת אונקולוגיה',
+    dateTime: israelTime(2026, 6, 22, 15, 40),
+    escortId: null,
+    status: 'scheduled',
+    summary: null,
+    calendarEventId: null,
+  },
+];
+
+// ── Run ───────────────────────────────────────────────────────────────────────
+
 async function seed() {
+  console.log('Seeding presets...');
   for (const preset of presets) {
-    await setDoc(doc(db, 'presets', preset.id), preset);
-    console.log(`✅ Seeded preset: ${preset.name}`);
+    await db.collection('presets').doc(preset.id).set(preset);
+    console.log(`  ✅ ${preset.name}`);
   }
-  console.log('Done.');
+
+  console.log('\nSeeding treatments...');
+  for (const treatment of treatments) {
+    await db.collection('treatments').doc(treatment.id).set(treatment);
+    console.log(`  ✅ ${treatment.title} — ${treatment.dateTime.toDate().toLocaleString('he-IL')}`);
+  }
+
+  console.log('\n🎉 Done!');
   process.exit(0);
 }
 
