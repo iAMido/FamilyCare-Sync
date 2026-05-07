@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only authenticated users can access any data
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // treatments: any authenticated family member can read
+    // only authenticated users can create/update (whitelist enforced in app)
+    match /treatments/{treatmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false; // soft-delete only via status: cancelled
+    }
+
+    // presets: read-only for all family members
+    match /presets/{presetId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // users: readable by all family members, writable only by the owning uid
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == uid;
+    }
+  }
+}

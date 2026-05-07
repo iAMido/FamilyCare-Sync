@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npx expo *)",
+      "Read(//c/Users/ido/**)",
+      "Bash(npx create-expo-app@latest \"FamilyCare Sync\" --template blank-typescript)",
+      "Bash(npx create-expo-app@latest FamilyCareSync --template blank-typescript)",
+      "Bash(cp -r \"C:\\\\Users\\\\ido\\\\FamilyCareSync/.\" \"C:\\\\Users\\\\ido\\\\FamilyCare Sync/\")",
+      "Bash(rm -rf \"C:\\\\Users\\\\ido\\\\FamilyCareSync\")",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
