@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signOut,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  User,
+} from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import * as Linking from 'expo-linking';
 import { auth, db } from '../config/firebase';
 import { AppUser, UserRole } from '../types/User';
 import { EMAIL_WHITELIST } from '../constants/emailWhitelist';
@@ -12,6 +19,27 @@ type AuthState =
 
 export function useAuth() {
   const [state, setState] = useState<AuthState>({ status: 'loading' });
+
+  // Handle magic link deep link when app is opened from email
+  useEffect(() => {
+    async function handleDeepLink(url: string) {
+      if (!isSignInWithEmailLink(auth, url)) return;
+
+      // Retrieve the email saved before sending the link
+      const email = await getStoredEmail();
+      if (!email) return;
+
+      try {
+        await signInWithEmailLink(auth, email, url);
+      } catch {
+        setState({ status: 'unauthenticated', error: 'link_expired' });
+      }
+    }
+
+    Linking.getInitialURL().then(url => { if (url) handleDeepLink(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
@@ -38,7 +66,6 @@ export function useAuth() {
         avatarColor: data?.avatarColor,
       };
 
-      // Ensure user document exists
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', firebaseUser.uid), {
           email: appUser.email,
@@ -53,14 +80,14 @@ export function useAuth() {
     return unsubscribe;
   }, []);
 
-  async function login(email: string, password: string): Promise<void> {
-    setState({ status: 'loading' });
-    await signInWithEmailAndPassword(auth, email, password);
-  }
-
-  async function logout(): Promise<void> {
+  async function logout() {
     await signOut(auth);
   }
 
-  return { state, login, logout };
+  return { state, logout };
 }
+
+// Simple in-memory store for the email used to send the magic link
+let _pendingEmail = '';
+export function storePendingEmail(email: string) { _pendingEmail = email; }
+async function getStoredEmail(): Promise<string> { return _pendingEmail; }

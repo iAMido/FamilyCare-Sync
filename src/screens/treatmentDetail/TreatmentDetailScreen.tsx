@@ -25,6 +25,7 @@ import { DashboardStackParamList } from '../../navigation/AppTabs';
 import dayjs from 'dayjs';
 import { PostVisitSummary } from './PostVisitSummary';
 import { EscortManager } from './EscortManager';
+import { EditTreatmentScreen } from './EditTreatmentScreen';
 
 type TreatmentDetailRouteProp = RouteProp<DashboardStackParamList, 'TreatmentDetail'>;
 
@@ -38,6 +39,7 @@ export function TreatmentDetailScreen() {
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [family, setFamily] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
 
   async function loadData() {
     const [t, famSnap] = await Promise.all([
@@ -72,6 +74,13 @@ export function TreatmentDetailScreen() {
 
   if (loading || !treatment) return <LoadingSpinner />;
 
+  if (editing) return (
+    <EditTreatmentScreen
+      treatment={treatment}
+      onDone={() => { setEditing(false); loadData(); }}
+    />
+  );
+
   const dt = dayjs(treatment.dateTime);
   const isPast = treatment.dateTime < new Date();
   const escort = family.find((u) => u.uid === treatment.escortId);
@@ -88,7 +97,12 @@ export function TreatmentDetailScreen() {
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.topTitle}>Appointment Details</Text>
-        <View style={styles.backBtn} />
+        {treatment.status === 'scheduled' && (
+          <TouchableOpacity onPress={() => setEditing(true)} style={styles.editBtn}>
+            <Text style={styles.editBtnText}>Edit ✏️</Text>
+          </TouchableOpacity>
+        )}
+        {treatment.status !== 'scheduled' && <View style={styles.backBtn} />}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -163,6 +177,15 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     minWidth: 70,
+  },
+  editBtn: {
+    minWidth: 70,
+    alignItems: 'flex-end',
+  },
+  editBtnText: {
+    fontSize: FontSize.md,
+    color: Colors.primary,
+    fontWeight: FontWeight.medium,
   },
   backText: {
     fontSize: FontSize.md,
