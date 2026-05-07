@@ -2,7 +2,6 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getFunctions } from 'firebase/functions';
-import Constants from 'expo-constants';
 
 const {
   EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -22,9 +21,8 @@ const firebaseConfig = {
   appId: EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Guard against double-initialization during Expo hot reload
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 export const functions = getFunctions(app, 'us-central1');
