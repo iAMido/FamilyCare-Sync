@@ -5,15 +5,12 @@ import {
   Modal, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { updateTreatment } from '../../services/firestoreService';
 import { Treatment } from '../../types/Treatment';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
-import { DashboardStackParamList } from '../../navigation/AppTabs';
 import dayjs from 'dayjs';
 
-type EditRouteProp = RouteProp<DashboardStackParamList, 'EditTreatment'>;
 type PickerMode = 'date' | 'time' | null;
 
 interface Props {
