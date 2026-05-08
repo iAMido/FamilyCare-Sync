@@ -1,26 +1,32 @@
-import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { Treatment } from '../types/Treatment';
 import { AutomatedReminder } from '../types/Preset';
 import dayjs from 'dayjs';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowList: true,
-  }),
-});
+if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Notifications = require('expo-notifications');
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export async function scheduleLocalReminder(
   treatment: Treatment,
   reminder: AutomatedReminder
 ): Promise<string> {
-  const triggerDate = dayjs(treatment.dateTime).add(reminder.offsetHours, 'hour').toDate();
+  if (Platform.OS === 'web') return '';
 
+  const Notifications = require('expo-notifications');
+  const triggerDate = dayjs(treatment.dateTime).add(reminder.offsetHours, 'hour').toDate();
   if (triggerDate <= new Date()) return '';
 
-  const id = await Notifications.scheduleNotificationAsync({
+  return Notifications.scheduleNotificationAsync({
     content: {
       title: 'FamilyCare Sync',
       body: reminder.message,
@@ -28,15 +34,17 @@ export async function scheduleLocalReminder(
     },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
   });
-
-  return id;
 }
 
 export async function cancelLocalReminder(notificationId: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const Notifications = require('expo-notifications');
   await Notifications.cancelScheduledNotificationAsync(notificationId);
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  const Notifications = require('expo-notifications');
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
 }

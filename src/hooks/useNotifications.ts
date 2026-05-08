@@ -1,32 +1,29 @@
 import { useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { requestNotificationPermissions } from '../services/notificationService';
 import { AppUser } from '../types/User';
 
 export function useNotifications(user: AppUser | null) {
-  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
+  const listenerRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || Platform.OS === 'web') return;
 
     (async () => {
       const granted = await requestNotificationPermissions();
       if (!granted) return;
 
-      const token = await Notifications.getExpoPushTokenAsync();
-      if (token.data) {
+      const Notifications = require('expo-notifications');
+      const token = await Notifications.getExpoPushTokenAsync().catch(() => null);
+      if (token?.data) {
         await updateDoc(doc(db, 'users', user.uid), { fcmToken: token.data });
       }
+
+      listenerRef.current = Notifications.addNotificationReceivedListener(() => {});
     })();
 
-    notificationListener.current = Notifications.addNotificationReceivedListener(() => {
-      // Foreground notification received - handled by setNotificationHandler
-    });
-
-    return () => {
-      notificationListener.current?.remove();
-    };
+    return () => { listenerRef.current?.remove(); };
   }, [user?.uid]);
 }
