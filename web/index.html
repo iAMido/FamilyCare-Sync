@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>FamilyCare Sync</title>
+    <style id="expo-reset">
+      html, body { height: 100%; }
+      body { overflow: hidden; }
+      #root { display: flex; height: 100%; flex: 1; }
+    </style>
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        document.body.style.cssText = 'background:#fff;padding:20px;font-family:monospace;overflow:auto';
+        document.body.innerHTML = '<h2 style="color:red">JS Error</h2><b>' + msg + '</b><br/><br/>' + (err ? err.stack : '') + '<br/>Source: ' + src + ':' + line;
+      };
+      window.onunhandledrejection = function(e) {
+        document.body.style.cssText = 'background:#fff;padding:20px;font-family:monospace;overflow:auto';
+        document.body.innerHTML = '<h2 style="color:red">Unhandled Promise</h2>' + (e.reason ? (e.reason.stack || e.reason) : e);
+      };
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
