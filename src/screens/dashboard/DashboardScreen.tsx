@@ -22,7 +22,9 @@ import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { Colors } from '../../constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/spacing';
 import { AppUser } from '../../types/User';
+import { Treatment } from '../../types/Treatment';
 import { DashboardStackParamList } from '../../navigation/AppTabs';
+import dayjs from 'dayjs';
 
 type Nav = StackNavigationProp<DashboardStackParamList, 'DashboardHome'>;
 
@@ -32,6 +34,7 @@ export function DashboardScreen() {
   const user = state.status === 'authenticated' ? state.user : null;
   const { treatments, upcoming, nextTreatment, loading, error } = useTreatments();
   const [familyMap, setFamilyMap] = useState<Record<string, string>>({});
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     getDocs(collection(db, 'users')).then((snap) => {
@@ -41,6 +44,12 @@ export function DashboardScreen() {
     });
   }, []);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    // Real-time listener auto-updates; just reset the refreshing state
+    setTimeout(() => setRefreshing(false), 600);
+  }
+
   async function handleImGoing() {
     if (!nextTreatment || !user) return;
     await updateTreatment(nextTreatment.id, { escortId: user.uid });
@@ -48,23 +57,47 @@ export function DashboardScreen() {
 
   if (loading) return <LoadingSpinner />;
 
+  // Upcoming (scheduled, future) — excluding the next one shown in hero
+  const upcomingRest = upcoming.filter((t) => t.id !== nextTreatment?.id);
+
+  const firstName = user?.displayName?.split(' ')[0] ?? 'there';
+  const hour = dayjs().hour();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.displayName?.split(' ')[0]} 👋</Text>
-          <Text style={styles.subtitle}>{upcoming.length} upcoming appointment{upcoming.length !== 1 ? 's' : ''}</Text>
-        </View>
-      </View>
-
-      {error && <ErrorBanner message={error} />}
-
       <FlatList
-        data={treatments.filter((t) => t !== nextTreatment)}
+        data={upcomingRest}
         keyExtractor={(t) => t.id}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.primary}
+          />
+        }
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <>
+            {/* Header */}
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.greeting}>{greeting}, {firstName} 👋</Text>
+                <Text style={styles.subtitle}>
+                  {upcoming.length === 0
+                    ? 'No upcoming appointments'
+                    : `${upcoming.length} upcoming appointment${upcoming.length !== 1 ? 's' : ''}`}
+                </Text>
+              </View>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{firstName[0]?.toUpperCase()}</Text>
+              </View>
+            </View>
+
+            {error && <ErrorBanner message={error} />}
+
+            {/* Hero — next appointment */}
             {nextTreatment ? (
               <NextTreatmentCard
                 treatment={nextTreatment}
@@ -74,41 +107,50 @@ export function DashboardScreen() {
                 currentUserId={user?.uid ?? ''}
               />
             ) : (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyEmoji}>🌟</Text>
-                <Text style={styles.emptyText}>No upcoming appointments</Text>
+              <View style={styles.emptyHero}>
+                <Text style={styles.emptyEmoji}>🌿</Text>
+                <Text style={styles.emptyHeroTitle}>All clear!</Text>
+                <Text style={styles.emptyHeroSub}>No upcoming appointments. Tap + to add one.</Text>
               </View>
             )}
 
-            {treatments.length > 1 && (
-              <Text style={styles.sectionTitle}>All Appointments</Text>
+            {/* Section title */}
+            {upcomingRest.length > 0 && (
+              <View style={styles.sectionRow}>
+                <Text style={styles.sectionTitle}>Upcoming</Text>
+                <Text style={styles.sectionCount}>{upcomingRest.length}</Text>
+              </View>
             )}
           </>
         }
-        renderItem={({ item }) => (
-          <TreatmentCard
-            treatment={item}
-            escortName={item.escortId ? familyMap[item.escortId] : undefined}
-            onPress={() => navigation.navigate('TreatmentDetail', { treatmentId: item.id })}
-          />
+        renderItem={({ item, index }) => (
+          <View style={styles.timelineItem}>
+            <TreatmentCard
+              treatment={item}
+              escortName={item.escortId ? familyMap[item.escortId] : undefined}
+              onPress={() => navigation.navigate('TreatmentDetail', { treatmentId: item.id })}
+              dotColorIndex={index + 1}
+            />
+          </View>
         )}
         ListEmptyComponent={
-          treatments.length === 0 ? (
+          nextTreatment ? null : (
             <View style={styles.emptyList}>
               <Text style={styles.emptyListText}>
-                Tap + to schedule the first appointment
+                Tap + below to schedule the first appointment
               </Text>
             </View>
-          ) : null
+          )
         }
       />
 
+      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('QuickCreate')}
         activeOpacity={0.85}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Text style={styles.fabIcon}>＋</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -118,6 +160,9 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  list: {
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
@@ -131,37 +176,80 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  list: {
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.textOnPrimary,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingBottom: 100,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
   },
   sectionTitle: {
     fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: Colors.textSecondary,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
   },
-  emptyCard: {
+  sectionCount: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.textOnPrimary,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.full,
+    minWidth: 20,
+    height: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 6,
+  },
+  timelineItem: {
+    paddingLeft: Spacing.md,
+    paddingRight: Spacing.md,
+  },
+  emptyHero: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
-    margin: Spacing.md,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   emptyEmoji: {
-    fontSize: 40,
+    fontSize: 48,
     marginBottom: Spacing.sm,
   },
-  emptyText: {
-    fontSize: FontSize.lg,
+  emptyHeroTitle: {
+    fontSize: FontSize.xl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  emptyHeroSub: {
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
+    textAlign: 'center',
   },
   emptyList: {
     padding: Spacing.xl,
@@ -174,23 +262,24 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 28,
     right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowColor: Colors.primaryDark,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 8,
   },
   fabIcon: {
-    fontSize: 30,
+    fontSize: 28,
     color: Colors.textOnPrimary,
-    lineHeight: 34,
+    lineHeight: 32,
+    fontWeight: FontWeight.regular,
   },
 });

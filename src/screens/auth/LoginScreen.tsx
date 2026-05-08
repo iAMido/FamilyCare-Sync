@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
 } from 'react-native';
 import {
   signInWithEmailAndPassword,
@@ -86,58 +94,99 @@ export function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.inner}>
-        <Text style={styles.logo}>🏥</Text>
-        <Text style={styles.title}>FamilyCare Sync</Text>
-        <Text style={styles.subtitle}>Private family medical coordination</Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Illustration / logo area */}
+        <View style={styles.heroArea}>
+          <View style={styles.logoCircle}>
+            <Text style={styles.logoEmoji}>🌿</Text>
+          </View>
+          <Text style={styles.appName}>FamilyCare Sync</Text>
+          <Text style={styles.tagline}>Private family medical coordination</Text>
+        </View>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Family email address"
-            placeholderTextColor={Colors.textMuted}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor={Colors.textMuted}
-            secureTextEntry
-            autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-          />
+        {/* Card */}
+        <View style={styles.card}>
+          {/* Mode toggle */}
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              style={[styles.modeBtn, mode === 'login' && styles.modeBtnActive]}
+              onPress={() => setMode('login')}
+            >
+              <Text style={[styles.modeBtnText, mode === 'login' && styles.modeBtnTextActive]}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeBtn, mode === 'register' && styles.modeBtnActive]}
+              onPress={() => setMode('register')}
+            >
+              <Text style={[styles.modeBtnText, mode === 'register' && styles.modeBtnTextActive]}>
+                Register
+              </Text>
+            </TouchableOpacity>
+          </View>
 
+          {/* Inputs */}
+          <View style={styles.inputs}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="your@email.com"
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor={Colors.textMuted}
+                secureTextEntry
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              />
+            </View>
+          </View>
+
+          {/* Primary button */}
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
             onPress={mode === 'login' ? handleLogin : handleRegister}
             disabled={loading}
           >
-            {loading
-              ? <ActivityIndicator color={Colors.textOnPrimary} />
-              : <Text style={styles.buttonText}>{mode === 'login' ? 'Sign In' : 'Create Account'}</Text>
-            }
+            {loading ? (
+              <ActivityIndicator color={Colors.textOnPrimary} />
+            ) : (
+              <Text style={styles.primaryBtnText}>
+                {mode === 'login' ? 'Sign In' : 'Create Account'}
+              </Text>
+            )}
           </TouchableOpacity>
 
+          {/* Forgot password */}
           {mode === 'login' && (
-            <TouchableOpacity onPress={handleForgotPassword} style={styles.linkBtn}>
-              <Text style={styles.linkText}>Forgot password?</Text>
+            <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn}>
+              <Text style={styles.forgotText}>Forgot password?</Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'register' : 'login')} style={styles.linkBtn}>
-            <Text style={styles.linkText}>
-              {mode === 'login' ? "First time? Create account →" : "← Back to sign in"}
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        <Text style={styles.footerNote}>Access is restricted to authorized family members only.</Text>
-      </View>
+        <Text style={styles.footerNote}>
+          🔒 Access is restricted to authorized family members only.
+        </Text>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -146,7 +195,7 @@ function friendlyError(code: string): string {
   switch (code) {
     case 'auth/wrong-password':
     case 'auth/invalid-credential': return 'Incorrect email or password.';
-    case 'auth/user-not-found': return 'No account found. Use "Create Account" to register.';
+    case 'auth/user-not-found': return 'No account found. Use Register to create one.';
     case 'auth/email-already-in-use': return 'An account with this email already exists.';
     case 'auth/too-many-requests': return 'Too many attempts. Try again later.';
     default: return 'Something went wrong. Try again.';
@@ -154,24 +203,148 @@ function friendlyError(code: string): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.xl },
-  logo: { fontSize: 56, textAlign: 'center', marginBottom: Spacing.sm },
-  title: { fontSize: FontSize.xxxl, fontWeight: FontWeight.bold, color: Colors.textPrimary, textAlign: 'center', marginBottom: Spacing.xs },
-  subtitle: { fontSize: FontSize.md, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.xxl },
-  form: { gap: Spacing.sm },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xxl,
+  },
+  // Hero
+  heroArea: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primaryBg,
+    borderWidth: 2,
+    borderColor: Colors.primary + '40',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  logoEmoji: {
+    fontSize: 40,
+  },
+  appName: {
+    fontSize: FontSize.xxl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  tagline: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
+  // Card
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 4,
+    marginBottom: Spacing.lg,
+  },
+  // Mode toggle
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceVariant,
+    borderRadius: BorderRadius.lg,
+    padding: 3,
+    marginBottom: Spacing.lg,
+  },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  modeBtnActive: {
+    backgroundColor: Colors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modeBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.medium,
+    color: Colors.textMuted,
+  },
+  modeBtnTextActive: {
+    color: Colors.textPrimary,
+    fontWeight: FontWeight.bold,
+  },
+  // Inputs
+  inputs: {
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  inputLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+  },
   input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: 14,
-    fontSize: FontSize.md, color: Colors.textPrimary,
+    backgroundColor: Colors.surfaceVariant,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 13,
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
   },
-  button: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
-    paddingVertical: 16, alignItems: 'center', marginTop: Spacing.xs,
+  // Primary button
+  primaryBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: Colors.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: Colors.textOnPrimary, fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
-  linkBtn: { alignItems: 'center', paddingVertical: Spacing.xs },
-  linkText: { fontSize: FontSize.sm, color: Colors.primary },
-  footerNote: { fontSize: FontSize.xs, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.xl },
+  primaryBtnDisabled: {
+    opacity: 0.6,
+  },
+  primaryBtnText: {
+    color: Colors.textOnPrimary,
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+  },
+  // Forgot
+  forgotBtn: {
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  forgotText: {
+    fontSize: FontSize.sm,
+    color: Colors.primary,
+    fontWeight: FontWeight.medium,
+  },
+  // Footer
+  footerNote: {
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
 });

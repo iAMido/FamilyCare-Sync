@@ -2,39 +2,78 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import dayjs from 'dayjs';
 import { Treatment } from '../../types/Treatment';
-import { StatusBadge } from './StatusBadge';
-import { Colors } from '../../constants/colors';
+import { Colors, DotColors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 
 interface Props {
   treatment: Treatment;
   escortName?: string;
   onPress: () => void;
+  dotColorIndex?: number;
   compact?: boolean;
 }
 
-export function TreatmentCard({ treatment, escortName, onPress, compact }: Props) {
+export function TreatmentCard({ treatment, escortName, onPress, dotColorIndex = 0, compact }: Props) {
   const dt = dayjs(treatment.dateTime);
+  const isPast = treatment.dateTime < new Date();
+  const dotColor = DotColors[dotColorIndex % DotColors.length];
+  const isCancelled = treatment.status === 'cancelled';
+  const isCompleted = treatment.status === 'completed';
 
   return (
-    <TouchableOpacity style={[styles.card, compact && styles.compact]} onPress={onPress} activeOpacity={0.75}>
-      <View style={styles.left}>
-        <View style={styles.dateBlock}>
-          <Text style={styles.day}>{dt.format('DD')}</Text>
-          <Text style={styles.month}>{dt.format('MMM').toUpperCase()}</Text>
-        </View>
+    <TouchableOpacity
+      style={[styles.row, compact && styles.compact]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Timeline column */}
+      <View style={styles.timelineCol}>
+        <View style={[styles.dot, { backgroundColor: isCancelled ? Colors.cancelled : dotColor }]} />
+        <View style={styles.line} />
       </View>
 
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{treatment.title}</Text>
-        <Text style={styles.time}>{dt.format('HH:mm')} · {treatment.location}</Text>
+      {/* Content */}
+      <View style={[styles.card, (isCancelled || isCompleted) && styles.cardMuted]}>
+        {/* Date badge + time */}
+        <View style={styles.cardHeader}>
+          <View style={[styles.dateBadge, { backgroundColor: dotColor + '18' }]}>
+            <Text style={[styles.dateDay, { color: dotColor }]}>{dt.format('D')}</Text>
+            <Text style={[styles.dateMon, { color: dotColor }]}>{dt.format('MMM').toUpperCase()}</Text>
+          </View>
+          <View style={styles.cardMeta}>
+            <Text style={[styles.title, isCancelled && styles.titleStrike]} numberOfLines={1}>
+              {treatment.title}
+            </Text>
+            <Text style={styles.time}>{dt.format('HH:mm')} · {treatment.location}</Text>
+          </View>
+        </View>
 
+        {/* Footer chips */}
         <View style={styles.footer}>
-          <StatusBadge status={treatment.status} />
+          {isCancelled && (
+            <View style={[styles.statusChip, { backgroundColor: Colors.cancelled + '20' }]}>
+              <Text style={[styles.statusText, { color: Colors.cancelled }]}>Cancelled</Text>
+            </View>
+          )}
+          {isCompleted && (
+            <View style={[styles.statusChip, { backgroundColor: Colors.success + '20' }]}>
+              <Text style={[styles.statusText, { color: Colors.success }]}>Completed</Text>
+            </View>
+          )}
+          {!isCancelled && !isCompleted && (
+            <View style={[styles.statusChip, { backgroundColor: Colors.statusScheduled + '18' }]}>
+              <Text style={[styles.statusText, { color: Colors.statusScheduled }]}>Scheduled</Text>
+            </View>
+          )}
           {escortName ? (
-            <Text style={styles.escort}>👤 {escortName}</Text>
+            <View style={styles.escortChip}>
+              <View style={styles.escortDot} />
+              <Text style={styles.escortText}>{escortName}</Text>
+            </View>
           ) : treatment.status === 'scheduled' ? (
-            <Text style={styles.unassigned}>⚠️ No escort</Text>
+            <View style={styles.noEscortChip}>
+              <Text style={styles.noEscortText}>⚠ No escort</Text>
+            </View>
           ) : null}
         </View>
       </View>
@@ -43,53 +82,88 @@ export function TreatmentCard({ treatment, escortName, onPress, compact }: Props
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: 'row',
+    marginBottom: 2,
+  },
+  compact: {
+    marginBottom: 0,
+  },
+  // Timeline
+  timelineCol: {
+    width: 28,
+    alignItems: 'center',
+    paddingTop: 14,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
+    marginBottom: 0,
+    zIndex: 1,
+  },
+  line: {
+    flex: 1,
+    width: 2,
+    backgroundColor: Colors.border,
+    marginTop: 4,
+  },
+  // Card
+  card: {
+    flex: 1,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
+    marginLeft: 4,
     marginBottom: Spacing.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  compact: {
-    padding: Spacing.sm,
-    marginBottom: Spacing.xs,
+  cardMuted: {
+    opacity: 0.7,
   },
-  left: {
-    marginRight: Spacing.md,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  dateBlock: {
-    backgroundColor: Colors.primary + '15',
+  dateBadge: {
+    width: 40,
+    height: 44,
     borderRadius: BorderRadius.sm,
-    width: 44,
-    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  day: {
-    fontSize: FontSize.xl,
+  dateDay: {
+    fontSize: FontSize.lg,
     fontWeight: FontWeight.bold,
-    color: Colors.primary,
-    lineHeight: 26,
+    lineHeight: 22,
   },
-  month: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
-    color: Colors.primary,
-    lineHeight: 14,
+  dateMon: {
+    fontSize: 9,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 0.5,
+    lineHeight: 12,
   },
-  body: {
+  cardMeta: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   title: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: Colors.textPrimary,
+  },
+  titleStrike: {
+    textDecorationLine: 'line-through',
+    color: Colors.textMuted,
   },
   time: {
     fontSize: FontSize.sm,
@@ -98,15 +172,47 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: 2,
+    gap: Spacing.xs,
+    flexWrap: 'wrap',
   },
-  escort: {
+  statusChip: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  statusText: {
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    fontWeight: FontWeight.semibold,
   },
-  unassigned: {
+  escortChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primaryBg,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  escortDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
+  },
+  escortText: {
+    fontSize: FontSize.xs,
+    color: Colors.primary,
+    fontWeight: FontWeight.medium,
+  },
+  noEscortChip: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: Colors.warningBg,
+  },
+  noEscortText: {
     fontSize: FontSize.xs,
     color: Colors.warning,
+    fontWeight: FontWeight.medium,
   },
 });

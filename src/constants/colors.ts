@@ -1,26 +1,45 @@
 export const Colors = {
-  primary: '#2E7D9B',
-  primaryLight: '#4AAECF',
-  primaryDark: '#1A5F7A',
+  // Brand — sage green
+  primary: '#6B9E7A',
+  primaryLight: '#8DB89A',
+  primaryDark: '#4E7E5C',
+  primaryBg: '#EEF5F0',
+
+  // Accent
   accent: '#E8734A',
-  success: '#4CAF50',
-  warning: '#FF9800',
-  error: '#F44336',
-  cancelled: '#9E9E9E',
+  accentBg: '#FDF0EB',
 
-  background: '#F5F7FA',
+  // Semantic
+  success: '#6B9E7A',
+  warning: '#F5A623',
+  warningBg: '#FEF6E4',
+  error: '#E05C5C',
+  errorBg: '#FDEAEA',
+  cancelled: '#A0A8B4',
+
+  // Backgrounds
+  background: '#F6F4EF',
   surface: '#FFFFFF',
-  surfaceVariant: '#EEF2F7',
-  border: '#E0E6ED',
+  surfaceVariant: '#F0EDE8',
+  border: '#E8E4DD',
 
-  textPrimary: '#1A2332',
-  textSecondary: '#5A6A7A',
-  textMuted: '#9AA5B0',
+  // Text
+  textPrimary: '#2C2C2C',
+  textSecondary: '#5E6472',
+  textMuted: '#A0A8B4',
   textOnPrimary: '#FFFFFF',
 
-  statusScheduled: '#2196F3',
-  statusCompleted: '#4CAF50',
-  statusCancelled: '#9E9E9E',
+  // Timeline dot colors (appointment types)
+  dot1: '#6B9E7A',  // sage
+  dot2: '#7B9ED9',  // sky blue
+  dot3: '#C97BBD',  // soft purple
+  dot4: '#E8734A',  // warm orange
+  dot5: '#5BB5C3',  // teal
+
+  // Status
+  statusScheduled: '#7B9ED9',
+  statusCompleted: '#6B9E7A',
+  statusCancelled: '#A0A8B4',
 } as const;
 
 export const StatusColors: Record<string, string> = {
@@ -28,3 +47,12 @@ export const StatusColors: Record<string, string> = {
   completed: Colors.statusCompleted,
   cancelled: Colors.statusCancelled,
 };
+
+// Dot colors cycle for timeline items
+export const DotColors = [
+  Colors.dot1,
+  Colors.dot2,
+  Colors.dot3,
+  Colors.dot4,
+  Colors.dot5,
+];

@@ -5,7 +5,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { TreatmentDetailScreen } from '../screens/treatmentDetail/TreatmentDetailScreen';
 import { QuickCreateScreen } from '../screens/quickCreate/QuickCreateScreen';
+import { HistoryScreen } from '../screens/history/HistoryScreen';
+import { FamilyScreen } from '../screens/family/FamilyScreen';
 import { Colors } from '../constants/colors';
+import { FontSize, FontWeight } from '../constants/spacing';
 import { AppUser } from '../types/User';
 
 export type DashboardStackParamList = {
@@ -17,15 +20,19 @@ export type DashboardStackParamList = {
 const Tab = createBottomTabNavigator();
 const DashStack = createStackNavigator<DashboardStackParamList>();
 
+// SVG-free icons using emoji/unicode
+const TAB_ICONS: Record<string, { default: string; active: string }> = {
+  Home: { default: '⌂', active: '⌂' },
+  History: { default: '◷', active: '◷' },
+  Family: { default: '♡', active: '♡' },
+};
+
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Dashboard: '🏥',
-    Schedule: '📅',
-    Profile: '👤',
-  };
   return (
-    <View style={styles.tabIcon}>
-      <Text style={styles.tabEmoji}>{icons[name] ?? '●'}</Text>
+    <View style={[styles.tabItem, focused && styles.tabItemActive]}>
+      <Text style={[styles.tabEmoji, focused && styles.tabEmojiActive]}>
+        {name === 'Home' ? '🏠' : name === 'History' ? '📋' : '👨‍👩‍👧‍👦'}
+      </Text>
       <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{name}</Text>
     </View>
   );
@@ -41,14 +48,6 @@ function DashboardStack() {
   );
 }
 
-function ProfileScreen() {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>Profile coming soon</Text>
-    </View>
-  );
-}
-
 export function AppTabs({ user }: { user: AppUser }) {
   return (
     <Tab.Navigator
@@ -59,14 +58,19 @@ export function AppTabs({ user }: { user: AppUser }) {
       }}
     >
       <Tab.Screen
-        name="Dashboard"
+        name="Home"
         component={DashboardStack}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Dashboard" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} /> }}
       />
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
+        name="History"
+        component={HistoryScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="History" focused={focused} /> }}
+      />
+      <Tab.Screen
+        name="Family"
+        component={FamilyScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Family" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
@@ -75,34 +79,41 @@ export function AppTabs({ user }: { user: AppUser }) {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: Colors.surface,
-    borderTopColor: Colors.border,
     borderTopWidth: 1,
+    borderTopColor: Colors.border,
     height: 72,
     paddingBottom: 8,
+    paddingTop: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 10,
   },
-  tabIcon: {
+  tabItem: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 6,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  tabItemActive: {
+    // subtle highlight
   },
   tabEmoji: {
     fontSize: 22,
+    opacity: 0.45,
+  },
+  tabEmojiActive: {
+    opacity: 1,
   },
   tabLabel: {
     fontSize: 10,
     color: Colors.textMuted,
     marginTop: 2,
+    fontWeight: FontWeight.medium,
   },
   tabLabelActive: {
     color: Colors.primary,
-    fontWeight: '600',
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-  placeholderText: {
-    color: Colors.textSecondary,
+    fontWeight: FontWeight.bold,
   },
 });

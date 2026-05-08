@@ -14,8 +14,6 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { getTreatmentById, updateTreatment } from '../../services/firestoreService';
 import { useAuth } from '../../hooks/useAuth';
-import { StatusBadge } from '../../components/treatment/StatusBadge';
-import { Avatar } from '../../components/common/Avatar';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
@@ -54,10 +52,10 @@ export function TreatmentDetailScreen() {
   useEffect(() => { loadData(); }, [treatmentId]);
 
   async function handleCancel() {
-    Alert.alert('Cancel Appointment', 'Are you sure you want to cancel this appointment?', [
-      { text: 'No', style: 'cancel' },
+    Alert.alert('Cancel Appointment', 'Are you sure you want to cancel?', [
+      { text: 'Keep', style: 'cancel' },
       {
-        text: 'Yes, Cancel',
+        text: 'Cancel Appointment',
         style: 'destructive',
         onPress: async () => {
           await updateTreatment(treatmentId, { status: 'cancelled' });
@@ -74,52 +72,107 @@ export function TreatmentDetailScreen() {
 
   if (loading || !treatment) return <LoadingSpinner />;
 
-  if (editing) return (
-    <EditTreatmentScreen
-      treatment={treatment}
-      onDone={() => { setEditing(false); loadData(); }}
-    />
-  );
+  if (editing) {
+    return (
+      <EditTreatmentScreen
+        treatment={treatment}
+        onDone={() => { setEditing(false); loadData(); }}
+      />
+    );
+  }
 
   const dt = dayjs(treatment.dateTime);
   const isPast = treatment.dateTime < new Date();
-  const escort = family.find((u) => u.uid === treatment.escortId);
+  const isScheduled = treatment.status === 'scheduled';
+  const isCompleted = treatment.status === 'completed';
+  const isCancelled = treatment.status === 'cancelled';
 
   function openMaps() {
     const query = encodeURIComponent(treatment!.location);
     Linking.openURL(`https://maps.google.com/maps?q=${query}`);
   }
 
+  const statusColor = isCancelled
+    ? Colors.statusCancelled
+    : isCompleted
+    ? Colors.statusCompleted
+    : Colors.statusScheduled;
+
+  const statusLabel = isCancelled ? 'Cancelled' : isCompleted ? 'Completed' : 'Scheduled';
+
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Top bar */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Appointment Details</Text>
-        {treatment.status === 'scheduled' && (
+        <Text style={styles.topTitle}>Details</Text>
+        {isScheduled ? (
           <TouchableOpacity onPress={() => setEditing(true)} style={styles.editBtn}>
             <Text style={styles.editBtnText}>Edit ✏️</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.editBtn} />
         )}
-        {treatment.status !== 'scheduled' && <View style={styles.backBtn} />}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.headerCard}>
-          <Text style={styles.title}>{treatment.title}</Text>
-          <StatusBadge status={treatment.status} />
-          <View style={styles.metaRows}>
-            <Text style={styles.meta}>📅 {dt.format('dddd, D MMMM YYYY')}</Text>
-            <Text style={styles.meta}>🕐 {dt.format('HH:mm')}</Text>
-            <TouchableOpacity onPress={openMaps}>
-              <Text style={[styles.meta, styles.link]}>📍 {treatment.location}</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero card */}
+        <View style={styles.heroCard}>
+          {/* Status badge */}
+          <View style={[styles.statusBadge, { backgroundColor: statusColor + '18' }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+          </View>
+
+          <Text style={styles.heroTitle}>{treatment.title}</Text>
+
+          {/* Meta chips */}
+          <View style={styles.metaList}>
+            <View style={styles.metaItem}>
+              <View style={styles.metaIcon}>
+                <Text style={styles.metaIconText}>📅</Text>
+              </View>
+              <View>
+                <Text style={styles.metaLabel}>Date</Text>
+                <Text style={styles.metaValue}>{dt.format('dddd, D MMMM YYYY')}</Text>
+              </View>
+            </View>
+
+            <View style={styles.metaSeparator} />
+
+            <View style={styles.metaItem}>
+              <View style={styles.metaIcon}>
+                <Text style={styles.metaIconText}>🕐</Text>
+              </View>
+              <View>
+                <Text style={styles.metaLabel}>Time</Text>
+                <Text style={styles.metaValue}>{dt.format('HH:mm')}</Text>
+              </View>
+            </View>
+
+            <View style={styles.metaSeparator} />
+
+            <TouchableOpacity style={styles.metaItem} onPress={openMaps}>
+              <View style={styles.metaIcon}>
+                <Text style={styles.metaIconText}>📍</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.metaLabel}>Location</Text>
+                <Text style={[styles.metaValue, styles.metaLink]} numberOfLines={1}>
+                  {treatment.location}
+                </Text>
+              </View>
+              <Text style={styles.metaChevron}>›</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Escort */}
+        {/* Escort section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Escort</Text>
           <EscortManager
@@ -130,8 +183,8 @@ export function TreatmentDetailScreen() {
           />
         </View>
 
-        {/* Post-visit */}
-        {(isPast || treatment.status === 'completed') && (
+        {/* Post-visit summary */}
+        {(isPast || isCompleted) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Visit Summary</Text>
             <PostVisitSummary
@@ -143,7 +196,7 @@ export function TreatmentDetailScreen() {
         )}
 
         {/* Actions */}
-        {treatment.status === 'scheduled' && (
+        {isScheduled && (
           <View style={styles.actions}>
             {isPast && (
               <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={handleComplete}>
@@ -151,10 +204,12 @@ export function TreatmentDetailScreen() {
               </TouchableOpacity>
             )}
             <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} onPress={handleCancel}>
-              <Text style={[styles.actionBtnText, styles.cancelBtnText]}>✕ Cancel Appointment</Text>
+              <Text style={styles.cancelBtnText}>✕ Cancel Appointment</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        <View style={{ height: Spacing.xxl }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -170,10 +225,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
+    backgroundColor: Colors.background,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.surface,
   },
   backBtn: {
     minWidth: 70,
@@ -182,15 +237,15 @@ const styles = StyleSheet.create({
     minWidth: 70,
     alignItems: 'flex-end',
   },
-  editBtnText: {
-    fontSize: FontSize.md,
-    color: Colors.primary,
-    fontWeight: FontWeight.medium,
-  },
   backText: {
     fontSize: FontSize.md,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontWeight: FontWeight.semibold,
+  },
+  editBtnText: {
+    fontSize: FontSize.md,
+    color: Colors.primary,
+    fontWeight: FontWeight.semibold,
   },
   topTitle: {
     fontSize: FontSize.lg,
@@ -199,67 +254,138 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.md,
-    paddingBottom: Spacing.xxl,
   },
-  headerCard: {
+  // Hero card
+  heroCard: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
     gap: Spacing.sm,
   },
-  title: {
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  statusText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 0.3,
+  },
+  heroTitle: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
+    letterSpacing: -0.3,
   },
-  metaRows: {
-    gap: 6,
+  metaList: {
+    backgroundColor: Colors.surfaceVariant,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
     marginTop: Spacing.xs,
   },
-  meta: {
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    gap: Spacing.md,
   },
-  link: {
+  metaSeparator: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: Spacing.md,
+  },
+  metaIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  metaIconText: {
+    fontSize: 16,
+  },
+  metaLabel: {
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    fontWeight: FontWeight.medium,
+  },
+  metaValue: {
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
+    fontWeight: FontWeight.semibold,
+    marginTop: 1,
+  },
+  metaLink: {
     color: Colors.primary,
     textDecorationLine: 'underline',
   },
+  metaChevron: {
+    fontSize: FontSize.xl,
+    color: Colors.textMuted,
+  },
+  // Sections
   section: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   sectionTitle: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.md,
   },
+  // Actions
   actions: {
     gap: Spacing.sm,
-    marginTop: Spacing.md,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.md,
   },
   actionBtn: {
-    borderRadius: BorderRadius.md,
-    paddingVertical: 14,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: 15,
     alignItems: 'center',
   },
   completeBtn: {
     backgroundColor: Colors.success,
   },
-  cancelBtn: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.error,
-  },
   actionBtnText: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontWeight: FontWeight.bold,
     color: Colors.textOnPrimary,
   },
+  cancelBtn: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.error + '60',
+  },
   cancelBtnText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
     color: Colors.error,
   },
 });
