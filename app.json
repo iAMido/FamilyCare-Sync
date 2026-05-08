@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F6F4EF"
     },
     "ios": {
       "supportsTablet": true,
@@ -26,18 +26,24 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "themeColor": "#6B9E7A",
+      "backgroundColor": "#F6F4EF",
+      "name": "FamilyCare Sync",
+      "shortName": "FamilyCare",
+      "description": "Private family medical appointment coordination"
     },
     "plugins": [
       [
         "expo-notifications",
         {
-          "color": "#2E7D9B"
+          "color": "#6B9E7A"
         }
       ],
       "expo-location",
       "@react-native-community/datetimepicker",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "extra": {
       "firebaseApiKey": "",

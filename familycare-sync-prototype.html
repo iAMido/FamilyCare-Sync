@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FamilyCare Sync — Interactive Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────── */
+:root {
+  --bg:           #F6F4EF;
+  --card:         #FFFFFF;
+  --sage:         #6B9E7A;
+  --sage-light:   #EAF4ED;
+  --sage-dark:    #4E8060;
+  --blue:         #5F9FBF;
+  --blue-light:   #E6F2F9;
+  --purple:       #9578C8;
+  --purple-light: #F0EAF9;
+  --amber:        #D4874A;
+  --amber-light:  #FEF3E8;
+  --red:          #C96A6A;
+  --red-light:    #FDEAEA;
+  --text:         #1C2B36;
+  --text-mid:     #4A6070;
+  --text-muted:   #8097A8;
+  --border:       #E2DDD6;
+  --border-light: #EDE9E2;
+  --font:         'Inter', -apple-system, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── OUTER WRAPPER ───────────────────────── */
+body {
+  font-family: var(--font);
+  background: #D8D4CC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 28px 16px 48px;
+  gap: 20px;
+}
+.proto-header { text-align: center; color: #3a3530; }
+.proto-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.4px; }
+.proto-header p  { font-size: 13px; color: #6a6058; margin-top: 3px; }
+.screen-nav { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.screen-btn {
+  padding: 7px 16px; border-radius: 20px;
+  border: 1.5px solid #b8b0a6; background: #f0ece6;
+  color: #3a3530; font: 500 12px/1 var(--font); cursor: pointer; transition: all .18s;
+}
+.screen-btn:hover  { border-color: var(--sage); color: var(--sage-dark); }
+.screen-btn.active { background: var(--sage); border-color: var(--sage); color: #fff; }
+
+/* ─── PHONE SHELL ─────────────────────────── */
+.phone-shell {
+  width: 390px; height: 844px;
+  background: var(--bg);
+  border-radius: 50px;
+  box-shadow: 0 0 0 10px #1a1a1a, 0 24px 60px rgba(0,0,0,.5);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.phone-notch {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 34px; background: #1a1a1a;
+  border-radius: 0 0 20px 20px; z-index: 100;
+}
+.status-bar {
+  height: 54px; display: flex; align-items: flex-end;
+  justify-content: space-between; padding: 0 24px 8px;
+  font-size: 12px; font-weight: 600; color: var(--text);
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.status-time { font-size: 15px; font-weight: 700; }
+.status-icons { display: flex; gap: 6px; align-items: center; }
+
+/* ─── SYNC BAR ───────────────────────────── */
+.sync-bar {
+  position: absolute; top: 54px; left: 0; right: 0;
+  background: var(--blue-light); border-bottom: 1px solid #b8d9ed;
+  padding: 8px 20px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; font-weight: 500; color: var(--blue);
+  z-index: 40;
+  opacity: 0; transform: translateY(-100%);
+  transition: opacity .3s, transform .3s;
+}
+.sync-bar.visible { opacity: 1; transform: translateY(0); }
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--blue);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+/* ─── SCREEN CONTAINER ───────────────────── */
+.screen-container { flex: 1; overflow: hidden; position: relative; }
+.screen {
+  position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden;
+  opacity: 0; pointer-events: none; transform: translateY(12px);
+  transition: opacity .25s, transform .25s; scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+.screen.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+/* ─── BOTTOM TAB BAR ─────────────────────── */
+.tab-bar {
+  height: 80px; background: var(--card);
+  border-top: 1px solid var(--border-light);
+  display: flex; align-items: flex-start; padding-top: 10px;
+  flex-shrink: 0; box-shadow: 0 -4px 20px rgba(0,0,0,.05);
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 4px; cursor: pointer; padding: 4px 0; transition: all .18s;
+}
+.tab-icon { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+.tab-icon svg { width: 22px; height: 22px; }
+.tab-label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.tab-item.active .tab-label { color: var(--sage); font-weight: 600; }
+.tab-item.active .tab-icon svg { stroke: var(--sage); }
+.tab-item:not(.active) .tab-icon svg { stroke: var(--text-muted); }
+
+/* ─── FAB ────────────────────────────────── */
+.fab {
+  position: absolute; bottom: 88px; right: 20px;
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, var(--sage), var(--sage-dark));
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 24px rgba(107,158,122,.45);
+  cursor: pointer; z-index: 50; border: none;
+  transition: transform .18s, box-shadow .18s;
+}
+.fab:hover  { transform: scale(1.06); box-shadow: 0 8px 28px rgba(107,158,122,.55); }
+.fab:active { transform: scale(.96); }
+.fab svg { width: 28px; height: 28px; stroke: #fff; }
+
+/* ─── DASHBOARD ─────────────────────────── */
+.dashboard { padding: 12px 0 100px; }
+.page-title {
+  padding: 4px 20px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-title h2 { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -.5px; }
+.page-title .date-badge {
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
+  background: var(--card); border: 1px solid var(--border);
+  padding: 5px 12px; border-radius: 20px;
+}
+.hero-card {
+  margin: 0 20px 20px;
+  background: linear-gradient(145deg, #4E8060, #6B9E7A);
+  border-radius: 24px; padding: 22px 22px 20px;
+  box-shadow: 0 8px 30px rgba(78,128,96,.35);
+  color: #fff; position: relative; overflow: hidden; cursor: pointer;
+}
+.hero-card::before {
+  content:''; position:absolute; top:-30px; right:-30px;
+  width:140px; height:140px; background:rgba(255,255,255,.08); border-radius:50%;
+}
+.hero-card::after {
+  content:''; position:absolute; bottom:-40px; right:40px;
+  width:100px; height:100px; background:rgba(255,255,255,.05); border-radius:50%;
+}
+.hero-eyebrow { font-size:11px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; opacity:.75; margin-bottom:6px; }
+.hero-title   { font-size:22px; font-weight:800; letter-spacing:-.4px; margin-bottom:4px; position:relative; z-index:1; }
+.hero-meta    { font-size:14px; opacity:.85; margin-bottom:16px; position:relative; z-index:1; display:flex; align-items:center; gap:6px; }
+.hero-meta svg { width:14px; height:14px; opacity:.8; }
+.hero-footer  { display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1; }
+.escort-row   { display:flex; align-items:center; gap:10px; }
+.escort-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:rgba(255,255,255,.25); border:2px solid rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:#fff;
+}
+.escort-info small  { font-size:10px; opacity:.7; display:block; }
+.escort-info strong { font-size:13px; font-weight:600; }
+.hero-time-pill {
+  background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.3);
+  border-radius:20px; padding:6px 14px; font-size:13px; font-weight:700;
+}
+.section-title {
+  padding: 0 20px 12px; font-size:13px; font-weight:700; letter-spacing:.5px;
+  text-transform:uppercase; color:var(--text-muted);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.section-title a { font-size:12px; font-weight:500; color:var(--sage); text-decoration:none; text-transform:none; letter-spacing:0; }
+.timeline { padding: 0 20px; }
+.timeline-item {
+  display:flex; gap:14px; padding:14px 0;
+  border-bottom:1px solid var(--border-light);
+  cursor:pointer; border-radius:var(--radius-sm); padding-left:2px;
+}
+.timeline-item:last-child { border-bottom:none; }
+.tl-dot-col { display:flex; flex-direction:column; align-items:center; gap:0; padding-top:4px; }
+.tl-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 3px rgba(255,255,255,.8); }
+.tl-dot.green  { background:var(--sage); }
+.tl-dot.purple { background:var(--purple); }
+.tl-dot.blue   { background:var(--blue); }
+.tl-dot.amber  { background:var(--amber); }
+.tl-line { width:2px; flex:1; background:var(--border-light); margin-top:4px; min-height:20px; }
+.tl-content { flex:1; }
+.tl-type {
+  font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+  padding:2px 8px; border-radius:6px; display:inline-block; margin-bottom:4px;
+}
+.tl-type.green  { background:var(--sage-light);   color:var(--sage-dark); }
+.tl-type.purple { background:var(--purple-light); color:#6B4BA8; }
+.tl-type.blue   { background:var(--blue-light);   color:#2F7A9E; }
+.tl-type.amber  { background:var(--amber-light);  color:#A05E20; }
+.tl-name { font-size:15px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.tl-meta { font-size:12px; color:var(--text-muted); display:flex; gap:10px; }
+.tl-meta span { display:flex; align-items:center; gap:3px; }
+.tl-meta svg  { width:11px; height:11px; }
+.tl-time { font-size:13px; font-weight:600; color:var(--text-mid); padding-top:2px; }
+.timeline-item.urgent {
+  background:var(--amber-light); border-radius:12px;
+  padding:12px 12px 12px 10px; border:1.5px solid #F0C090; margin-bottom:8px;
+}
+.urgent-badge {
+  font-size:10px; font-weight:700; color:var(--amber);
+  background:#fff; border:1px solid #F0C090; border-radius:6px;
+  padding:2px 7px; display:inline-flex; align-items:center; gap:4px; margin-bottom:4px;
+}
+
+/* ─── EMPTY STATE ────────────────────────── */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center;
+  padding:60px 32px 40px; text-align:center; gap:16px;
+}
+.empty-illustration {
+  width:120px; height:120px; background:var(--sage-light);
+  border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:8px;
+}
+.empty-illustration svg { width:60px; height:60px; }
+.empty-state h3 { font-size:20px; font-weight:700; color:var(--text); }
+.empty-state p  { font-size:14px; color:var(--text-muted); line-height:1.6; max-width:260px; }
+.empty-cta {
+  margin-top:8px; padding:14px 32px; background:var(--sage); color:#fff;
+  border:none; border-radius:16px; font:600 15px/1 var(--font);
+  cursor:pointer; box-shadow:0 4px 16px rgba(107,158,122,.4); transition:transform .15s;
+}
+.empty-cta:hover { transform:scale(1.03); }
+
+/* ─── QUICK CREATE ────────────────────────── */
+.preset-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:12px; padding:0 20px 20px;
+}
+.preset-btn {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:20px; padding:20px 16px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+  transition:all .18s; box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.preset-btn:hover  { border-color:var(--sage); box-shadow:0 4px 16px rgba(107,158,122,.2); transform:translateY(-2px); }
+.preset-btn:active { transform:scale(.97); }
+.preset-btn.selected { border-color:var(--sage); background:var(--sage-light); }
+.preset-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+.preset-icon svg { width:26px; height:26px; }
+.preset-name { font-size:15px; font-weight:700; color:var(--text); }
+.preset-desc { font-size:11px; color:var(--text-muted); margin-top:-6px; }
+.picker-body { padding: 0 20px; }
+.picker-section { margin-bottom: 20px; }
+.picker-label { font-size:12px; font-weight:700; letter-spacing:.5px; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px; }
+.mini-cal { background:var(--card); border-radius:16px; padding:16px; border:1px solid var(--border-light); }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cal-nav-btn { width:30px; height:30px; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:8px; }
+.cal-nav-btn:hover { background:var(--border-light); }
+.cal-nav-btn svg { width:16px; height:16px; stroke:var(--text-mid); }
+.cal-month-year { font-size:15px; font-weight:700; color:var(--text); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-day-name { font-size:11px; font-weight:600; color:var(--text-muted); text-align:center; padding:4px 0; }
+.cal-day {
+  aspect-ratio:1; border-radius:50%; border:none; background:transparent;
+  font-size:13px; font-weight:500; color:var(--text); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:background .12s;
+}
+.cal-day:hover   { background:var(--sage-light); }
+.cal-day.selected { background:var(--sage); color:#fff; font-weight:700; }
+.cal-day.today   { border:2px solid var(--sage); }
+.cal-day.other-month { color:var(--text-muted); opacity:.4; }
+.time-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.time-slot {
+  padding:10px 6px; border-radius:12px;
+  border:1.5px solid var(--border); background:var(--card);
+  font-size:14px; font-weight:500; color:var(--text-mid);
+  cursor:pointer; text-align:center; transition:all .15s;
+}
+.time-slot:hover   { border-color:var(--sage); color:var(--sage-dark); }
+.time-slot.selected { background:var(--sage); border-color:var(--sage); color:#fff; font-weight:700; }
+.sync-cta {
+  margin:4px 20px 0; width:calc(100% - 40px);
+  padding:16px; background:linear-gradient(135deg,var(--sage),var(--sage-dark));
+  color:#fff; border:none; border-radius:16px; font:700 16px/1 var(--font);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 4px 20px rgba(107,158,122,.4); transition:transform .15s, opacity .15s;
+}
+.sync-cta:hover { transform:scale(1.02); }
+.sync-cta svg { width:20px; height:20px; }
+
+/* ─── BOTTOM SHEET (shared) ─────────────── */
+.sheet-backdrop {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:200; display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none; transition:opacity .25s;
+  backdrop-filter:blur(2px);
+}
+.sheet-backdrop.open { opacity:1; pointer-events:auto; }
+.sheet {
+  width:100%; background:var(--bg); border-radius:28px 28px 0 0;
+  padding:0 0 32px; max-height:92%;
+  transform:translateY(100%); transition:transform .35s cubic-bezier(.32,.72,0,1);
+  overflow-y:auto; scrollbar-width:none;
+}
+.sheet::-webkit-scrollbar { display:none; }
+.sheet-backdrop.open .sheet { transform:translateY(0); }
+.sheet-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:14px auto 0; }
+.sheet-header {
+  padding:18px 24px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.sheet-header h3 { font-size:20px; font-weight:800; color:var(--text); }
+.sheet-close {
+  width:34px; height:34px; background:var(--border-light); border:none; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s;
+}
+.sheet-close:hover { background:var(--border); }
+.sheet-close svg { width:18px; height:18px; stroke:var(--text-mid); }
+
+/* ─── SUCCESS STATE ─────────────────────── */
+.success-step { display:none; padding:32px 24px 16px; text-align:center; }
+.success-step.visible { display:block; }
+.success-ring { width:100px; height:100px; margin:0 auto 20px; }
+.success-ring svg { width:100%; height:100%; }
+.success-check { stroke-dasharray:200; stroke-dashoffset:200; animation:draw-check .6s .2s ease forwards; }
+@keyframes draw-check { to { stroke-dashoffset:0; } }
+.success-ring-outer { animation:scale-in .4s ease both; }
+@keyframes scale-in  { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+.success-step h3 { font-size:22px; font-weight:800; color:var(--text); margin-bottom:8px; }
+.success-step p  { font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:20px; }
+.success-event-card {
+  background:var(--card); border:1px solid var(--border-light);
+  border-radius:16px; padding:16px; text-align:left; margin-bottom:20px;
+}
+.success-event-card .ev-title { font-size:16px; font-weight:700; color:var(--text); }
+.success-event-card .ev-meta  { font-size:13px; color:var(--text-muted); margin-top:4px; }
+
+/* ─── SCENARIOS ──────────────────────────── */
+.scenario-step { display:none; padding:0 0 16px; }
+.scenario-step.visible { display:block; }
+.scenario-intro { padding:8px 24px 16px; }
+.scenario-intro h3 { font-size:19px; font-weight:800; color:var(--text); margin-bottom:6px; }
+.scenario-intro p  { font-size:13px; color:var(--text-muted); line-height:1.5; }
+.scenario-card {
+  margin:0 20px 12px; background:var(--card);
+  border:1.5px solid var(--border-light);
+  border-radius:20px; overflow:hidden;
+  transition:border-color .2s;
+}
+.scenario-card.accepted { border-color:var(--sage); }
+.scenario-card.skipped  { opacity:.45; }
+.sc-header {
+  padding:16px 16px 14px;
+  display:flex; align-items:flex-start; gap:12px;
+}
+.sc-icon {
+  width:44px; height:44px; border-radius:13px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.sc-icon svg { width:22px; height:22px; }
+.sc-info { flex:1; }
+.sc-label { font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:3px; }
+.sc-name  { font-size:15px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.sc-when  { font-size:12px; color:var(--text-muted); }
+.sc-actions {
+  display:flex; gap:8px; padding:0 16px 14px;
+}
+.sc-btn {
+  flex:1; padding:10px; border-radius:12px; font:600 13px/1 var(--font);
+  cursor:pointer; text-align:center; transition:all .15s;
+}
+.sc-btn.accept { background:var(--sage); color:#fff; border:none; }
+.sc-btn.skip   { background:transparent; color:var(--text-muted); border:1.5px solid var(--border); }
+.sc-btn.accept:hover { opacity:.9; }
+.sc-btn.skip:hover   { background:var(--border-light); }
+
+/* mini time picker inside scenario */
+.sc-time-picker {
+  padding:0 16px 16px;
+  display:none;
+}
+.sc-time-picker.open { display:block; }
+.sc-time-note { font-size:12px; color:var(--text-muted); margin-bottom:10px; }
+.sc-time-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.sc-time-slot {
+  padding:9px 4px; border-radius:10px; border:1.5px solid var(--border);
+  background:var(--card); font-size:13px; font-weight:500; color:var(--text-mid);
+  cursor:pointer; text-align:center; transition:all .15s;
+}
+.sc-time-slot:hover   { border-color:var(--sage); color:var(--sage-dark); }
+.sc-time-slot.selected { background:var(--sage); border-color:var(--sage); color:#fff; font-weight:700; }
+
+/* auto-reminder badge */
+.sc-auto-badge {
+  margin:0 16px 14px;
+  background:var(--border-light); border-radius:10px; padding:10px 12px;
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--text-muted);
+}
+.sc-auto-badge svg { width:14px; height:14px; stroke:var(--text-muted); flex-shrink:0; }
+.sc-auto-badge strong { color:var(--text-mid); }
+
+.scenario-all-done {
+  margin:16px 20px 0; width:calc(100% - 40px);
+  padding:15px; background:linear-gradient(135deg,var(--sage),var(--sage-dark));
+  color:#fff; border:none; border-radius:16px; font:700 15px/1 var(--font);
+  cursor:pointer; box-shadow:0 4px 20px rgba(107,158,122,.35); transition:transform .15s;
+}
+.scenario-all-done:hover { transform:scale(1.02); }
+
+/* ─── TREATMENT DETAIL ───────────────────── */
+.detail-screen { padding:0 0 100px; }
+.detail-header {
+  padding:14px 20px 16px; background:var(--card);
+  border-bottom:1px solid var(--border-light);
+  position:relative;
+}
+.back-row {
+  display:flex; align-items:center; gap:8px; margin-bottom:12px; cursor:pointer;
+}
+.back-row svg   { width:20px; height:20px; stroke:var(--sage); }
+.back-row span  { font-size:14px; font-weight:600; color:var(--sage); }
+.detail-type-badge {
+  display:inline-flex; align-items:center; gap:6px; padding:4px 12px;
+  background:var(--purple-light); color:#6B4BA8;
+  border-radius:20px; font-size:12px; font-weight:700;
+  letter-spacing:.4px; text-transform:uppercase; margin-bottom:8px;
+}
+.detail-title { font-size:26px; font-weight:800; color:var(--text); letter-spacing:-.5px; margin-bottom:6px; }
+
+/* overflow menu button */
+.detail-menu-btn {
+  position:absolute; top:14px; right:20px;
+  width:38px; height:38px; border-radius:50%;
+  background:var(--border-light); border:none;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:background .15s;
+}
+.detail-menu-btn:hover { background:var(--border); }
+.detail-menu-btn svg { width:20px; height:20px; stroke:var(--text-mid); }
+
+/* edit mode fields */
+.editable-field {
+  position:relative; cursor:pointer;
+}
+.editable-field.editing { cursor:default; }
+.edit-hint {
+  font-size:10px; font-weight:600; color:var(--sage);
+  letter-spacing:.4px; text-transform:uppercase;
+  display:none; margin-top:2px;
+}
+.detail-header.edit-mode .edit-hint { display:block; }
+.detail-header.edit-mode .editable-field {
+  background:var(--sage-light); border-radius:10px;
+  padding:8px 10px; margin:-2px -4px;
+}
+
+.edit-input {
+  width:100%; border:none; background:transparent;
+  font:700 26px/1.2 var(--font); color:var(--text); letter-spacing:-.5px;
+  outline:none; resize:none;
+}
+.location-input {
+  font-size:14px !important; font-weight:400 !important; letter-spacing:0 !important;
+  color:var(--text-mid) !important;
+}
+
+.detail-location-row {
+  display:flex; align-items:flex-start; gap:8px;
+  font-size:14px; color:var(--text-mid);
+}
+.detail-location-row svg { width:15px; height:15px; flex-shrink:0; stroke:var(--text-muted); margin-top:2px; }
+
+.navigate-btn {
+  margin-top:14px; display:flex; align-items:center; gap:10px;
+  padding:12px 18px; background:var(--blue-light);
+  border:1.5px solid #a8cfe0; border-radius:14px;
+  cursor:pointer; transition:all .15s; width:fit-content;
+}
+.navigate-btn:hover { background:#d0e9f5; }
+.navigate-btn .nav-icon {
+  width:32px; height:32px; background:var(--blue); border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+}
+.navigate-btn .nav-icon svg { width:18px; height:18px; stroke:#fff; }
+.navigate-btn span  { font-size:14px; font-weight:600; color:var(--blue); }
+.navigate-btn small { font-size:11px; color:var(--text-muted); display:block; }
+
+/* edit mode action bar */
+.edit-action-bar {
+  display:none; gap:10px; margin-top:16px;
+}
+.detail-header.edit-mode .edit-action-bar { display:flex; }
+.edit-save-btn {
+  flex:1; padding:12px; background:var(--sage); color:#fff;
+  border:none; border-radius:14px; font:700 14px/1 var(--font); cursor:pointer;
+  transition:opacity .15s;
+}
+.edit-save-btn:hover { opacity:.9; }
+.edit-cancel-btn {
+  flex:1; padding:12px; background:transparent; color:var(--text-muted);
+  border:1.5px solid var(--border); border-radius:14px; font:600 14px/1 var(--font); cursor:pointer;
+}
+.edit-cancel-btn:hover { background:var(--border-light); }
+
+/* meta chips (editable) */
+.detail-meta-row { display:flex; gap:12px; padding:16px 20px; }
+.meta-chip {
+  flex:1; background:var(--card); border:1px solid var(--border-light);
+  border-radius:14px; padding:12px 14px;
+  display:flex; flex-direction:column; gap:3px; cursor:pointer;
+  transition:border-color .15s;
+}
+.meta-chip:hover { border-color:var(--sage); }
+.detail-header.edit-mode ~ .detail-meta-row .meta-chip { border-color:var(--sage); background:var(--sage-light); }
+.meta-chip-label { font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--text-muted); }
+.meta-chip-value { font-size:16px; font-weight:700; color:var(--text); }
+.meta-chip-edit  { display:none; width:100%; border:none; background:transparent; font:700 15px/1 var(--font); color:var(--text); outline:none; }
+
+/* who's coming */
+.detail-section { padding:0 20px 20px; }
+.detail-section-title {
+  font-size:13px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:var(--text-muted); margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.detail-section-title svg { width:14px; height:14px; stroke:var(--text-muted); }
+.family-member-row {
+  display:flex; align-items:center; gap:14px; padding:14px 16px;
+  background:var(--card); border-radius:14px; border:1.5px solid var(--border-light);
+  margin-bottom:8px; cursor:pointer; transition:border-color .15s;
+}
+.family-member-row.checked { border-color:var(--sage); background:var(--sage-light); }
+.member-avatar {
+  width:42px; height:42px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:700; flex-shrink:0;
+}
+.member-name { font-size:15px; font-weight:600; color:var(--text); flex:1; }
+.member-role { font-size:12px; color:var(--text-muted); margin-top:1px; }
+.member-toggle {
+  width:26px; height:26px; border-radius:50%;
+  border:2px solid var(--border);
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.family-member-row.checked .member-toggle { background:var(--sage); border-color:var(--sage); }
+.member-toggle svg { width:14px; height:14px; stroke:#fff; opacity:0; }
+.family-member-row.checked .member-toggle svg { opacity:1; }
+
+/* journal */
+.journal-card {
+  background:var(--card); border:1px solid var(--border-light);
+  border-radius:18px; padding:18px;
+}
+.journal-date   { font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:10px; letter-spacing:.3px; }
+.journal-textarea {
+  width:100%; min-height:100px; border:none; background:transparent;
+  font:400 14px/1.65 var(--font); color:var(--text); resize:none; outline:none;
+}
+.journal-textarea::placeholder { color:var(--text-muted); }
+.journal-divider { border:none; border-top:1px dashed var(--border); margin:12px 0; }
+.upload-doc-btn {
+  display:flex; align-items:center; gap:10px; padding:10px 0;
+  cursor:pointer; background:none; border:none; font:500 14px/1 var(--font); color:var(--text-mid);
+}
+.upload-doc-btn svg   { width:18px; height:18px; stroke:var(--text-muted); }
+.upload-doc-btn:hover { color:var(--sage); }
+.upload-doc-btn:hover svg { stroke:var(--sage); }
+.uploaded-doc {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  background:var(--border-light); border-radius:10px; margin-top:8px;
+}
+.uploaded-doc svg  { width:18px; height:18px; stroke:var(--text-mid); }
+.uploaded-doc span { font-size:13px; font-weight:500; color:var(--text-mid); }
+
+/* ─── OVERFLOW / CONFIRM SHEET ───────────── */
+.overflow-menu {
+  padding:8px 20px 24px;
+}
+.overflow-item {
+  display:flex; align-items:center; gap:14px; padding:16px 18px;
+  background:var(--card); border-radius:14px; margin-bottom:8px;
+  cursor:pointer; border:1.5px solid var(--border-light); transition:border-color .15s;
+}
+.overflow-item:hover { border-color:var(--border); }
+.overflow-item.danger { border-color:var(--red-light); background:var(--red-light); }
+.overflow-item.danger:hover { border-color:var(--red); }
+.ov-icon {
+  width:40px; height:40px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.ov-icon svg { width:20px; height:20px; }
+.ov-label { font-size:15px; font-weight:600; color:var(--text); }
+.ov-sub   { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.overflow-item.danger .ov-label { color:var(--red); }
+.overflow-item.danger .ov-sub   { color:#D08080; }
+
+.confirm-sheet-body { padding:0 24px 24px; text-align:center; }
+.confirm-icon {
+  width:72px; height:72px; border-radius:50%; background:var(--red-light);
+  display:flex; align-items:center; justify-content:center; margin:8px auto 16px;
+}
+.confirm-icon svg { width:32px; height:32px; stroke:var(--red); }
+.confirm-title { font-size:20px; font-weight:800; color:var(--text); margin-bottom:8px; }
+.confirm-desc  { font-size:14px; color:var(--text-muted); line-height:1.5; margin-bottom:24px; }
+.confirm-delete-btn {
+  width:100%; padding:15px; background:var(--red); color:#fff;
+  border:none; border-radius:14px; font:700 15px/1 var(--font); cursor:pointer; margin-bottom:10px;
+}
+.confirm-keep-btn {
+  width:100%; padding:14px; background:transparent; color:var(--text-muted);
+  border:1.5px solid var(--border); border-radius:14px; font:600 14px/1 var(--font); cursor:pointer;
+}
+
+/* ─── HISTORY ────────────────────────────── */
+.history-screen { padding:12px 0 100px; }
+.history-item {
+  margin:0 20px 10px; background:var(--card);
+  border:1px solid var(--border-light); border-radius:16px; padding:16px; cursor:pointer;
+}
+.history-item:hover { box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.history-date  { font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:4px; }
+.history-title { font-size:16px; font-weight:700; color:var(--text); margin-bottom:6px; }
+.history-summary { font-size:13px; color:var(--text-muted); line-height:1.5; }
+.history-footer { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+.history-tags  { display:flex; gap:6px; }
+.history-tag   { font-size:11px; font-weight:500; padding:3px 8px; border-radius:6px; background:var(--border-light); color:var(--text-muted); }
+.history-doc-icon { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted); }
+.history-doc-icon svg { width:13px; height:13px; stroke:var(--text-muted); }
+
+/* ─── FAMILY ─────────────────────────────── */
+.family-screen { padding:12px 0 100px; }
+.family-hero {
+  margin:0 20px 20px;
+  background:linear-gradient(145deg,#3D6B82,var(--blue));
+  border-radius:20px; padding:20px; color:#fff;
+  box-shadow:0 6px 24px rgba(63,130,163,.3);
+}
+.family-hero h3 { font-size:18px; font-weight:800; margin-bottom:4px; }
+.family-hero p  { font-size:13px; opacity:.8; }
+.family-avatars { display:flex; margin-top:14px; }
+.family-avatar-circle {
+  width:40px; height:40px; border-radius:50%;
+  border:2px solid rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:#fff; margin-left:-8px;
+}
+.family-avatar-circle:first-child { margin-left:0; }
+.family-add-circle {
+  width:40px; height:40px; border-radius:50%;
+  border:2px dashed rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  margin-left:-8px; cursor:pointer;
+}
+.family-add-circle svg { width:16px; height:16px; stroke:rgba(255,255,255,.7); }
+.settings-row {
+  margin:0 20px 8px; background:var(--card);
+  border-radius:14px; padding:16px 18px;
+  display:flex; align-items:center; gap:14px;
+  border:1px solid var(--border-light); cursor:pointer;
+}
+.settings-icon {
+  width:38px; height:38px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.settings-icon svg   { width:20px; height:20px; }
+.settings-label      { font-size:15px; font-weight:600; color:var(--text); }
+.settings-sub        { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.settings-arrow      { margin-left:auto; }
+.settings-arrow svg  { width:16px; height:16px; stroke:var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- ── CONTROLS ── -->
+<div class="proto-header">
+  <h1>FamilyCare Sync</h1>
+  <p>Interactive Prototype — v2 · Edit, Delete, Cancel &amp; Smart Scenarios</p>
+</div>
+<div class="screen-nav">
+  <button class="screen-btn active"  onclick="showDemo('dashboard')">A: Dashboard</button>
+  <button class="screen-btn"         onclick="showDemo('empty')">A: Empty State</button>
+  <button class="screen-btn"         onclick="showDemo('create')">B: Quick Create</button>
+  <button class="screen-btn"         onclick="showDemo('detail')">C: Detail (View)</button>
+  <button class="screen-btn"         onclick="openEditMode()">C: Edit Mode</button>
+  <button class="screen-btn"         onclick="toggleSync()">Toggle Sync</button>
+</div>
+
+<!-- ── PHONE ── -->
+<div class="phone-shell">
+  <div class="phone-notch"></div>
+
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="var(--text)"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" opacity=".3"/></svg>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text)" stroke-width="2"><path d="M1.42 9a16 16 0 0121.16 0M5 12.55a11 11 0 0114.08 0M10.54 16.1a6 6 0 012.92 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0" y="1" width="21" height="10" rx="2" stroke="var(--text)" stroke-width="1.5"/><rect x="1.5" y="2.5" width="16" height="7" rx="1" fill="var(--sage)"/><path d="M23 4.5v3a2 2 0 000-3z" fill="var(--text)" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="sync-bar" id="syncBar">
+    <div class="sync-dot"></div>
+    Syncing with Google Calendar…
+  </div>
+
+  <div class="screen-container">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="dashboard">
+        <div class="page-title">
+          <h2>Good Morning, Ido 👋</h2>
+          <span class="date-badge">Fri, May 8</span>
+        </div>
+        <div class="hero-card" onclick="showDemo('detail')">
+          <div class="hero-eyebrow">⚡ Next Treatment</div>
+          <div class="hero-title">Chemotherapy — Cycle 4</div>
+          <div class="hero-meta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Hadassah Medical Center
+          </div>
+          <div class="hero-footer">
+            <div class="escort-row">
+              <div class="escort-avatar">Y</div>
+              <div class="escort-info">
+                <small>Escort</small>
+                <strong>Yael Mosseri</strong>
+              </div>
+            </div>
+            <div class="hero-time-pill">Mon · 09:00</div>
+          </div>
+        </div>
+        <!-- Urgent -->
+        <div style="padding:0 20px 4px;">
+          <div class="timeline-item urgent">
+            <div class="tl-dot-col"><div class="tl-dot amber"></div></div>
+            <div class="tl-content">
+              <div class="urgent-badge">
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Reminder · Tomorrow
+              </div>
+              <div class="tl-name">Fasting Blood Test</div>
+              <div class="tl-meta">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>07:30 AM</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Clalit Clinic</span>
+              </div>
+            </div>
+            <div class="tl-time" style="color:var(--amber)">07:30</div>
+          </div>
+        </div>
+        <div class="section-title">Upcoming <a href="#">See all</a></div>
+        <div class="timeline">
+          <div class="timeline-item" onclick="showDemo('detail')">
+            <div class="tl-dot-col"><div class="tl-dot purple"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-type purple">Treatment</div>
+              <div class="tl-name">Chemotherapy — Cycle 4</div>
+              <div class="tl-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>09:00 – 14:00</span></div>
+            </div>
+            <div class="tl-time">Mon 12</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-dot-col"><div class="tl-dot green"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-type green">Checkup</div>
+              <div class="tl-name">Oncologist Follow-up</div>
+              <div class="tl-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>11:00 AM</span></div>
+            </div>
+            <div class="tl-time">Wed 14</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-dot-col"><div class="tl-dot blue"></div></div>
+            <div class="tl-content">
+              <div class="tl-type blue">Consult</div>
+              <div class="tl-name">Nutritionist Consultation</div>
+              <div class="tl-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>15:30 PM</span></div>
+            </div>
+            <div class="tl-time">Thu 15</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EMPTY STATE ══ -->
+    <div class="screen" id="screen-empty">
+      <div class="dashboard">
+        <div class="page-title">
+          <h2>Good Morning, Ido 👋</h2>
+          <span class="date-badge">Fri, May 8</span>
+        </div>
+        <div class="empty-state">
+          <div class="empty-illustration">
+            <svg viewBox="0 0 60 60" fill="none"><rect x="10" y="14" width="40" height="36" rx="6" stroke="var(--sage)" stroke-width="2.5"/><path d="M10 22h40" stroke="var(--sage)" stroke-width="2.5"/><path d="M20 8v8M40 8v8" stroke="var(--sage)" stroke-width="2.5" stroke-linecap="round"/><path d="M22 34l4 4 10-10" stroke="var(--sage)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>You're all caught up!</h3>
+          <p>No upcoming appointments yet. Add your first event and keep the whole family in sync — together, you've got this.</p>
+          <button class="empty-cta" onclick="showDemo('create')">+ Add first appointment</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ QUICK CREATE ══ -->
+    <div class="screen" id="screen-create">
+      <div class="dashboard" style="padding-top:8px;">
+        <div class="page-title"><h2>Add Appointment</h2></div>
+
+        <!-- Step 1: Presets -->
+        <div id="presetsGrid" class="preset-grid">
+          <button class="preset-btn" onclick="selectPreset(this,'Chemotherapy','chemo')">
+            <div class="preset-icon" style="background:var(--purple-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#9578C8" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="preset-name">Chemotherapy</div>
+            <div class="preset-desc">Treatment session</div>
+          </button>
+          <button class="preset-btn" onclick="selectPreset(this,'Blood Test','blood')">
+            <div class="preset-icon" style="background:var(--amber-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D4874A" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="preset-name">Blood Test</div>
+            <div class="preset-desc">Lab appointment</div>
+          </button>
+          <button class="preset-btn" onclick="selectPreset(this,'Doctor Consult','doctor')">
+            <div class="preset-icon" style="background:var(--sage-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="preset-name">Doctor Consult</div>
+            <div class="preset-desc">Medical visit</div>
+          </button>
+          <button class="preset-btn" onclick="selectPreset(this,'Imaging / CT','ct')">
+            <div class="preset-icon" style="background:var(--blue-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <div class="preset-name">Imaging / CT</div>
+            <div class="preset-desc">Scan appointment</div>
+          </button>
+          <button class="preset-btn" onclick="selectPreset(this,'Checkup','checkup')">
+            <div class="preset-icon" style="background:var(--sage-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="preset-name">Checkup</div>
+            <div class="preset-desc">Routine exam</div>
+          </button>
+          <button class="preset-btn" onclick="selectPreset(this,'Other','other')">
+            <div class="preset-icon" style="background:var(--border-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="preset-name">Other</div>
+            <div class="preset-desc">Custom event</div>
+          </button>
+        </div>
+
+        <!-- Step 2: Date/Time Picker -->
+        <div id="pickerSection" style="display:none; padding:0 0 20px;">
+          <div style="padding:0 20px 16px; display:flex; align-items:center; gap:10px;">
+            <button style="width:36px;height:36px;background:var(--border-light);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="showPresets()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div id="chosenPresetPill" style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;background:var(--sage-light);border:1px solid var(--sage);border-radius:20px;font-size:13px;font-weight:600;color:var(--sage-dark);">
+              <span id="chosenPresetName">Chemotherapy</span>
+            </div>
+          </div>
+          <div class="picker-body">
+            <div class="picker-section">
+              <div class="picker-label">Select Date</div>
+              <div class="mini-cal">
+                <div class="cal-nav">
+                  <button class="cal-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+                  <div class="cal-month-year">May 2026</div>
+                  <button class="cal-nav-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+                </div>
+                <div class="cal-grid" id="calGrid"></div>
+              </div>
+            </div>
+            <div class="picker-section">
+              <div class="picker-label">Select Time</div>
+              <div class="time-grid" id="timeGrid"></div>
+            </div>
+          </div>
+          <button class="sync-cta" id="syncCtaBtn" onclick="triggerSuccess()" disabled style="opacity:.5;cursor:not-allowed;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Sync to Family Calendar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TREATMENT DETAIL ══ -->
+    <div class="screen" id="screen-detail">
+      <div class="detail-screen">
+        <!-- Header -->
+        <div class="detail-header" id="detailHeader">
+          <div class="back-row" onclick="showDemo('dashboard')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Back</span>
+          </div>
+          <!-- Overflow / Edit menu button -->
+          <button class="detail-menu-btn" id="detailMenuBtn" onclick="openOverflowMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+
+          <div class="detail-type-badge">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
+            Treatment
+          </div>
+
+          <!-- Title (editable) -->
+          <div class="editable-field" id="titleField" onclick="focusEditField('titleField')">
+            <div class="detail-title" id="titleView">Chemotherapy — Cycle 4</div>
+            <textarea class="edit-input" id="titleInput" rows="1" style="display:none;" oninput="autoResize(this)">Chemotherapy — Cycle 4</textarea>
+            <div class="edit-hint">Tap to edit title</div>
+          </div>
+
+          <!-- Location (editable) -->
+          <div class="editable-field" id="locationField" style="margin-top:6px;" onclick="focusEditField('locationField')">
+            <div class="detail-location-row" id="locationView">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span id="locationText">Hadassah Medical Center — Ein Kerem, Jerusalem</span>
+            </div>
+            <input class="edit-input location-input" id="locationInput" style="display:none;" value="Hadassah Medical Center — Ein Kerem, Jerusalem">
+            <div class="edit-hint">Tap to edit location</div>
+          </div>
+
+          <button class="navigate-btn" style="margin-top:14px;">
+            <div class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div>
+              <span>Navigate</span>
+              <small>Waze / Google Maps</small>
+            </div>
+          </button>
+
+          <!-- Edit action bar -->
+          <div class="edit-action-bar" id="editActionBar">
+            <button class="edit-cancel-btn" onclick="cancelEdit()">Cancel</button>
+            <button class="edit-save-btn"   onclick="saveEdit()">Save Changes</button>
+          </div>
+        </div>
+
+        <!-- Meta chips (date/time/duration — editable) -->
+        <div class="detail-meta-row" id="metaRow">
+          <div class="meta-chip" onclick="editMetaChip('date')">
+            <div class="meta-chip-label">Date</div>
+            <div class="meta-chip-value" id="chipDate">Mon, May 12</div>
+            <input class="meta-chip-edit" id="inputDate" type="date" value="2026-05-12" style="display:none;" oninput="updateChip('date')">
+          </div>
+          <div class="meta-chip" onclick="editMetaChip('time')">
+            <div class="meta-chip-label">Start Time</div>
+            <div class="meta-chip-value" id="chipTime">09:00</div>
+            <input class="meta-chip-edit" id="inputTime" type="time" value="09:00" style="display:none;" oninput="updateChip('time')">
+          </div>
+          <div class="meta-chip" onclick="editMetaChip('duration')">
+            <div class="meta-chip-label">Duration</div>
+            <div class="meta-chip-value" id="chipDuration">~5 hrs</div>
+            <select class="meta-chip-edit" id="inputDuration" style="display:none;" onchange="updateChip('duration')">
+              <option>30 min</option><option>1 hr</option><option>2 hrs</option>
+              <option>3 hrs</option><option>4 hrs</option><option selected>~5 hrs</option>
+              <option>6 hrs</option><option>All day</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Who's Coming -->
+        <div class="detail-section">
+          <div class="detail-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Who's Coming
+          </div>
+          <div class="family-member-row checked" onclick="this.classList.toggle('checked')">
+            <div class="member-avatar" style="background:#EAF4ED;color:var(--sage-dark);">Y</div>
+            <div><div class="member-name">Yael Mosseri</div><div class="member-role">Daughter · Escort</div></div>
+            <div class="member-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </div>
+          <div class="family-member-row" onclick="this.classList.toggle('checked')">
+            <div class="member-avatar" style="background:#F0EAF9;color:#6B4BA8;">D</div>
+            <div><div class="member-name">David Mosseri</div><div class="member-role">Son</div></div>
+            <div class="member-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </div>
+          <div class="family-member-row" onclick="this.classList.toggle('checked')">
+            <div class="member-avatar" style="background:#E6F2F9;color:#2F7A9E;">I</div>
+            <div><div class="member-name">Ido Mosseri</div><div class="member-role">Son</div></div>
+            <div class="member-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </div>
+        </div>
+
+        <!-- Journal -->
+        <div class="detail-section">
+          <div class="detail-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+            Visit Notes
+          </div>
+          <div class="journal-card">
+            <div class="journal-date">Post-visit · Monday, May 12, 2026</div>
+            <textarea class="journal-textarea" placeholder="How did it go?…">Dr. Stern mentioned response is looking positive. Mom handled the session well — a bit tired but in good spirits. Next appointment is June 2nd.</textarea>
+            <hr class="journal-divider">
+            <div class="uploaded-doc">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Lab_Results_May12.pdf</span>
+            </div>
+            <button class="upload-doc-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload document or photo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HISTORY ══ -->
+    <div class="screen" id="screen-history">
+      <div class="history-screen">
+        <div class="page-title"><h2>History</h2></div>
+        <div class="section-title">April 2026</div>
+        <div class="history-item">
+          <div class="history-date">Mon, Apr 28 · Chemotherapy</div>
+          <div class="history-title">Cycle 3 — Hadassah</div>
+          <div class="history-summary">Good response noted. Fatigue manageable. Dr. Stern pleased with progress.</div>
+          <div class="history-footer">
+            <div class="history-tags"><span class="history-tag">Yael attended</span><span class="history-tag">5 hrs</span></div>
+            <div class="history-doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 2 docs</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-date">Thu, Apr 17 · Checkup</div>
+          <div class="history-title">Oncologist Follow-up</div>
+          <div class="history-summary">Blood counts stable. Continued current treatment plan.</div>
+          <div class="history-footer">
+            <div class="history-tags"><span class="history-tag">Ido attended</span></div>
+            <div class="history-doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 1 doc</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FAMILY ══ -->
+    <div class="screen" id="screen-family">
+      <div class="family-screen">
+        <div class="page-title"><h2>Family</h2></div>
+        <div class="family-hero">
+          <h3>The Mosseri Family</h3>
+          <p>3 members · Shared calendar active</p>
+          <div class="family-avatars">
+            <div class="family-avatar-circle" style="background:#5F8A7A;">Y</div>
+            <div class="family-avatar-circle" style="background:#7A6BA8;">D</div>
+            <div class="family-avatar-circle" style="background:#4A7A9E;">I</div>
+            <div class="family-add-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+          </div>
+        </div>
+        <div class="section-title">Settings</div>
+        <div class="settings-row">
+          <div class="settings-icon" style="background:var(--sage-light);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div><div class="settings-label">Notifications</div><div class="settings-sub">Push, SMS, WhatsApp</div></div>
+          <div class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon" style="background:var(--blue-light);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div><div class="settings-label">Google Calendar Sync</div><div class="settings-sub">Connected · idomosseri@gmail.com</div></div>
+          <div class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon" style="background:var(--amber-light);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div><div class="settings-label">Reminders</div><div class="settings-sub">24hr + 2hr before appointments</div></div>
+          <div class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ OVERFLOW MENU SHEET ══ -->
+    <div class="sheet-backdrop" id="overflowSheet">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>Chemotherapy — Cycle 4</h3>
+          <button class="sheet-close" onclick="closeSheet('overflowSheet')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="overflow-menu">
+          <div class="overflow-item" onclick="closeSheet('overflowSheet'); openEditMode()">
+            <div class="ov-icon" style="background:var(--sage-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <div><div class="ov-label">Edit Appointment</div><div class="ov-sub">Change date, time, location, title</div></div>
+          </div>
+          <div class="overflow-item" onclick="closeSheet('overflowSheet'); openCancelConfirm()">
+            <div class="ov-icon" style="background:var(--amber-light);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <div><div class="ov-label" style="color:var(--amber);">Cancel Appointment</div><div class="ov-sub">Keep record, mark as cancelled</div></div>
+          </div>
+          <div class="overflow-item danger" onclick="closeSheet('overflowSheet'); openDeleteConfirm()">
+            <div class="ov-icon" style="background:rgba(201,106,106,.15);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </div>
+            <div><div class="ov-label">Delete Appointment</div><div class="ov-sub">Permanently remove from calendar</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CANCEL CONFIRM SHEET ══ -->
+    <div class="sheet-backdrop" id="cancelSheet">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="confirm-sheet-body" style="padding-top:20px;">
+          <div class="confirm-icon" style="background:var(--amber-light);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </div>
+          <div class="confirm-title">Cancel this appointment?</div>
+          <div class="confirm-desc">The event will be marked as cancelled in the family calendar and everyone will be notified. You can reschedule it later.</div>
+          <button class="confirm-delete-btn" style="background:var(--amber);" onclick="closeSheet('cancelSheet'); showDemo('dashboard')">Yes, Cancel Appointment</button>
+          <button class="confirm-keep-btn"   onclick="closeSheet('cancelSheet')">Keep It</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DELETE CONFIRM SHEET ══ -->
+    <div class="sheet-backdrop" id="deleteSheet">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="confirm-sheet-body" style="padding-top:20px;">
+          <div class="confirm-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </div>
+          <div class="confirm-title">Delete appointment?</div>
+          <div class="confirm-desc">This will permanently remove "Chemotherapy — Cycle 4" from the family calendar. This can't be undone.</div>
+          <button class="confirm-delete-btn" onclick="closeSheet('deleteSheet'); showDemo('dashboard')">Delete Permanently</button>
+          <button class="confirm-keep-btn"   onclick="closeSheet('deleteSheet')">Keep It</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SUCCESS + SCENARIOS SHEET ══ -->
+    <div class="sheet-backdrop" id="successSheet">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+
+        <!-- Success step -->
+        <div class="success-step" id="successStep">
+          <div class="success-ring">
+            <svg viewBox="0 0 100 100" fill="none">
+              <circle class="success-ring-outer" cx="50" cy="50" r="46" fill="var(--sage-light)" stroke="var(--sage)" stroke-width="2"/>
+              <polyline class="success-check" points="28,52 44,68 72,36" stroke="var(--sage)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <h3>Synced to Family Calendar!</h3>
+          <p>Everyone will get a notification. What's next?</p>
+          <div class="success-event-card">
+            <div class="ev-title" id="successTitle">Chemotherapy</div>
+            <div class="ev-meta"  id="successMeta">May 12 · 09:00 · Hadassah Medical Center</div>
+          </div>
+          <!-- Show "Smart Suggestions" button only for Chemo/CT -->
+          <div id="scenarioCta" style="display:none; margin-bottom:12px;">
+            <button onclick="showScenarios()" style="width:100%;padding:15px;background:linear-gradient(135deg,var(--purple),#7A5CB8);color:#fff;border:none;border-radius:16px;font:700 15px/1 var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(149,120,200,.35);">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Set up Smart Suggestions
+            </button>
+            <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">Blood test + fasting reminder — auto-linked to this date</div>
+          </div>
+          <button style="width:100%;padding:14px;background:transparent;color:var(--text-muted);border:1.5px solid var(--border);border-radius:14px;font:600 15px/1 var(--font);cursor:pointer;" onclick="closeSuccess()">Done</button>
+        </div>
+
+        <!-- Scenarios step -->
+        <div class="scenario-step" id="scenarioStep">
+          <div class="sheet-header" style="padding-top:18px;">
+            <h3 style="font-size:18px;">Smart Suggestions</h3>
+            <button class="sheet-close" onclick="closeSuccess()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="scenario-intro">
+            <p>Based on your <strong id="scPresetLabel">Chemotherapy</strong> on <strong id="scDateLabel">May 12</strong>, we recommend:</p>
+          </div>
+
+          <!-- Suggestion 1: Blood Test -->
+          <div class="scenario-card" id="scCard1">
+            <div class="sc-header">
+              <div class="sc-icon" style="background:var(--amber-light);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><path d="M12 2L8 12h8L12 2zM8 12v10"/><circle cx="12" cy="20" r="2"/></svg>
+              </div>
+              <div class="sc-info">
+                <div class="sc-label" style="color:var(--amber);">1 Day Before · <span id="scBloodDate">May 11</span></div>
+                <div class="sc-name">Fasting Blood Test</div>
+                <div class="sc-when">Required before each chemo cycle — pick a morning time</div>
+              </div>
+            </div>
+            <div class="sc-actions" id="scActions1">
+              <button class="sc-btn accept" onclick="acceptScenario1()">Pick time &amp; Add</button>
+              <button class="sc-btn skip"   onclick="skipScenario(1)">Skip</button>
+            </div>
+            <!-- Time picker (shown after Accept) -->
+            <div class="sc-time-picker" id="scTimePicker1">
+              <div class="sc-time-note">Morning times recommended (fasting blood draw)</div>
+              <div class="sc-time-grid" id="scTimeGrid1"></div>
+              <div id="scTimeConfirm1" style="display:none;padding:10px 0 0;">
+                <button onclick="confirmBloodTime()" style="width:100%;padding:12px;background:var(--amber);color:#fff;border:none;border-radius:12px;font:700 14px/1 var(--font);cursor:pointer;">
+                  Confirm Blood Test Time
+                </button>
+              </div>
+            </div>
+            <!-- Auto-calculated fasting reminder (shown after blood time is chosen) -->
+            <div class="sc-auto-badge" id="scFastingBadge" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <div><strong>Fasting reminder auto-set:</strong> <span id="fastingTimeLabel">—</span> the night before (12 hrs before test)</div>
+            </div>
+          </div>
+
+          <!-- Suggestion 2: Fasting Reminder standalone -->
+          <div class="scenario-card" id="scCard2">
+            <div class="sc-header">
+              <div class="sc-icon" style="background:#FFF0F0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#C96A6A" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+              </div>
+              <div class="sc-info">
+                <div class="sc-label" style="color:var(--red);">Night Before · Auto-calculated</div>
+                <div class="sc-name">Fasting Reminder</div>
+                <div class="sc-when" id="scFastingWhen">Set after you pick blood test time above</div>
+              </div>
+            </div>
+            <div class="sc-actions" id="scActions2">
+              <button class="sc-btn accept" id="scFastingAcceptBtn" onclick="acceptScenario2()" disabled style="opacity:.4;cursor:not-allowed;">Add Reminder</button>
+              <button class="sc-btn skip"   onclick="skipScenario(2)">Skip</button>
+            </div>
+          </div>
+
+          <button class="scenario-all-done" onclick="closeSuccess()">All Done — View Calendar</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /screen-container -->
+
+  <!-- FAB -->
+  <button class="fab" id="fabBtn" onclick="showDemo('create')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- Bottom Tab Bar -->
+  <nav class="tab-bar">
+    <div class="tab-item active" id="tab-home" onclick="switchTab('home')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <span class="tab-label">Home</span>
+    </div>
+    <div class="tab-item" id="tab-history" onclick="switchTab('history')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <span class="tab-label">History</span>
+    </div>
+    <div class="tab-item" id="tab-family" onclick="switchTab('family')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <span class="tab-label">Family</span>
+    </div>
+  </nav>
+
+</div><!-- /phone-shell -->
+
+<script>
+/* ──────────────────────────────────────
+   SCREEN NAV
+────────────────────────────────────── */
+let currentTab = 'home', syncVisible = false;
+let selectedDate = null, selectedTime = null, selectedPresetKey = '', selectedPresetName = '';
+
+function showDemo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const t = document.getElementById('screen-' + id);
+  if (t) t.classList.add('active');
+  const fab = document.getElementById('fabBtn');
+  fab.style.display = ['dashboard','empty','history','family'].includes(id) ? 'flex' : 'none';
+  if (['dashboard','empty'].includes(id)) setTabActive('home');
+  else if (id === 'history') setTabActive('history');
+  else if (id === 'family')  setTabActive('family');
+  else document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  if (id === 'create') { showPresets(); document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected')); selectedDate=null; selectedTime=null; renderCalendar(); renderTimes(); }
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  if (tab === 'home') showDemo('dashboard');
+  else if (tab === 'history') showDemo('history');
+  else if (tab === 'family')  showDemo('family');
+}
+
+function setTabActive(tab) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  const el = document.getElementById('tab-' + tab);
+  if (el) el.classList.add('active');
+}
+
+/* ──────────────────────────────────────
+   SYNC BAR
+────────────────────────────────────── */
+function toggleSync() {
+  syncVisible = !syncVisible;
+  const bar = document.getElementById('syncBar');
+  bar.classList.toggle('visible', syncVisible);
+  if (syncVisible) setTimeout(() => { syncVisible = false; bar.classList.remove('visible'); }, 3000);
+}
+
+/* ──────────────────────────────────────
+   QUICK CREATE
+────────────────────────────────────── */
+function selectPreset(btn, name, key) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedPresetName = name; selectedPresetKey = key;
+  setTimeout(() => {
+    document.getElementById('presetsGrid').style.display = 'none';
+    document.getElementById('pickerSection').style.display = 'block';
+    document.getElementById('chosenPresetName').textContent = name;
+    document.getElementById('successTitle').textContent = name;
+    updateSyncBtn();
+  }, 180);
+}
+function showPresets() {
+  document.getElementById('presetsGrid').style.display = 'grid';
+  document.getElementById('pickerSection').style.display = 'none';
+  selectedDate = null; selectedTime = null; renderCalendar(); renderTimes(); updateSyncBtn();
+}
+
+/* Calendar */
+function renderCalendar() {
+  const grid = document.getElementById('calGrid'); if (!grid) return;
+  const days = ['S','M','T','W','T','F','S'];
+  let html = days.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+  const today = 8, firstDay = new Date(2026,4,1).getDay(), daysInMonth = 31;
+  const prevDays = new Date(2026,4,0).getDate();
+  for (let i = 0; i < firstDay; i++) {
+    const d = prevDays - firstDay + 1 + i;
+    html += `<button class="cal-day other-month">${d}</button>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    html += `<button class="cal-day${d===today?' today':''}${selectedDate===d?' selected':''}" onclick="selectDate(${d})">${d}</button>`;
+  }
+  grid.innerHTML = html;
+}
+function selectDate(d) { selectedDate = d; renderCalendar(); updateSyncBtn(); }
+
+/* Times */
+const TIMES = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
+function renderTimes() {
+  const g = document.getElementById('timeGrid'); if (!g) return;
+  g.innerHTML = TIMES.map(t => `<button class="time-slot${selectedTime===t?' selected':''}" onclick="selectTime('${t}')">${t}</button>`).join('');
+}
+function selectTime(t) { selectedTime = t; renderTimes(); updateSyncBtn(); }
+function updateSyncBtn() {
+  const btn = document.getElementById('syncCtaBtn'); if (!btn) return;
+  const ready = selectedDate && selectedTime;
+  btn.disabled = !ready; btn.style.opacity = ready ? '1' : '.5'; btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+  if (ready) document.getElementById('successMeta').textContent = `May ${selectedDate} · ${selectedTime} · Hadassah Medical Center`;
+}
+
+/* ──────────────────────────────────────
+   SUCCESS & SCENARIOS
+────────────────────────────────────── */
+function triggerSuccess() {
+  if (!selectedDate || !selectedTime) return;
+  // reset scenario state
+  resetScenarios();
+  // show/hide smart suggestion CTA based on preset
+  const hasSuggestions = ['chemo','ct'].includes(selectedPresetKey);
+  document.getElementById('scenarioCta').style.display = hasSuggestions ? 'block' : 'none';
+  // populate labels
+  const monthDay = `May ${selectedDate}`;
+  const dayBefore = `May ${selectedDate - 1}`;
+  document.getElementById('scDateLabel').textContent  = monthDay;
+  document.getElementById('scBloodDate').textContent  = dayBefore;
+  document.getElementById('scPresetLabel').textContent = selectedPresetName;
+  // show sheet
+  const sheet = document.getElementById('successSheet');
+  document.getElementById('successStep').classList.add('visible');
+  document.getElementById('scenarioStep').classList.remove('visible');
+  sheet.classList.add('open');
+  toggleSync();
+}
+
+function showScenarios() {
+  document.getElementById('successStep').classList.remove('visible');
+  document.getElementById('scenarioStep').classList.add('visible');
+  renderScenarioTimes();
+}
+
+function closeSuccess() {
+  document.getElementById('successSheet').classList.remove('open');
+  setTimeout(() => {
+    document.getElementById('successStep').classList.remove('visible');
+    document.getElementById('scenarioStep').classList.remove('visible');
+    showDemo('dashboard');
+  }, 300);
+}
+
+/* Scenario blood test times */
+const MORNING_TIMES = ['06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30'];
+let scBloodTime = null;
+
+function renderScenarioTimes() {
+  const g = document.getElementById('scTimeGrid1'); if (!g) return;
+  g.innerHTML = MORNING_TIMES.map(t =>
+    `<button class="sc-time-slot${scBloodTime===t?' selected':''}" onclick="pickBloodTime('${t}')">${t}</button>`
+  ).join('');
+}
+
+function pickBloodTime(t) {
+  scBloodTime = t;
+  renderScenarioTimes();
+  document.getElementById('scTimeConfirm1').style.display = 'block';
+}
+
+function acceptScenario1() {
+  document.getElementById('scActions1').style.display = 'none';
+  document.getElementById('scTimePicker1').classList.add('open');
+  renderScenarioTimes();
+}
+
+function confirmBloodTime() {
+  if (!scBloodTime) return;
+  document.getElementById('scCard1').classList.add('accepted');
+  document.getElementById('scTimePicker1').classList.remove('open');
+  document.getElementById('scActions1').style.display = 'none';
+  // show accepted indicator
+  document.getElementById('scActions1').insertAdjacentHTML('beforebegin',
+    `<div style="padding:0 16px 14px;font-size:13px;font-weight:600;color:var(--sage);display:flex;align-items:center;gap:6px;">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Added: Blood Test at ${scBloodTime}
+    </div>`
+  );
+  // Calculate fasting time (12 hrs before blood test)
+  const [h, m] = scBloodTime.split(':').map(Number);
+  let fh = h - 12; if (fh < 0) fh += 24;
+  const fastingTime = `${String(fh).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  const bloodDate = `May ${selectedDate - 1}`;
+  const fastingLabel = `${fastingTime} on ${bloodDate === 'May '+(selectedDate-1) ? `May ${selectedDate-1}` : bloodDate}`;
+  document.getElementById('scFastingBadge').style.display = 'flex';
+  document.getElementById('fastingTimeLabel').textContent = fastingTime;
+  document.getElementById('scFastingWhen').textContent = `${fastingTime} on night before blood test`;
+  // Unlock fasting reminder button
+  const btn = document.getElementById('scFastingAcceptBtn');
+  btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+}
+
+function acceptScenario2() {
+  if (!scBloodTime) return;
+  document.getElementById('scCard2').classList.add('accepted');
+  document.getElementById('scActions2').style.display = 'none';
+  document.getElementById('scActions2').insertAdjacentHTML('beforebegin',
+    `<div style="padding:0 16px 14px;font-size:13px;font-weight:600;color:var(--sage);display:flex;align-items:center;gap:6px;">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Fasting reminder set
+    </div>`
+  );
+}
+
+function skipScenario(n) {
+  document.getElementById('scCard' + n).classList.add('skipped');
+  document.getElementById('scActions' + n).style.display = 'none';
+  document.getElementById('scActions' + n).insertAdjacentHTML('beforebegin',
+    `<div style="padding:0 16px 14px;font-size:12px;color:var(--text-muted);">Skipped</div>`
+  );
+}
+
+function resetScenarios() {
+  scBloodTime = null;
+  ['scCard1','scCard2'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('accepted','skipped');
+  });
+  document.getElementById('scActions1').style.display = 'flex';
+  document.getElementById('scActions2').style.display = 'flex';
+  document.getElementById('scTimePicker1').classList.remove('open');
+  document.getElementById('scTimeConfirm1').style.display = 'none';
+  document.getElementById('scFastingBadge').style.display = 'none';
+  const btn = document.getElementById('scFastingAcceptBtn');
+  btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
+  // Remove any injected accepted/skipped messages
+  document.querySelectorAll('#scCard1 .accepted-msg, #scCard2 .accepted-msg').forEach(e => e.remove());
+}
+
+/* ──────────────────────────────────────
+   DETAIL: OVERFLOW / EDIT / DELETE
+────────────────────────────────────── */
+function openOverflowMenu()  { document.getElementById('overflowSheet').classList.add('open'); }
+function openCancelConfirm() { document.getElementById('cancelSheet').classList.add('open'); }
+function openDeleteConfirm() { document.getElementById('deleteSheet').classList.add('open'); }
+function closeSheet(id)      { document.getElementById(id).classList.remove('open'); }
+
+/* Edit mode */
+function openEditMode() {
+  showDemo('detail');
+  const header = document.getElementById('detailHeader');
+  header.classList.add('edit-mode');
+  // swap view → input
+  document.getElementById('titleView').style.display = 'none';
+  document.getElementById('titleInput').style.display = 'block';
+  document.getElementById('locationView').style.display = 'none';
+  document.getElementById('locationInput').style.display = 'block';
+  // make meta chips editable
+  ['date','time','duration'].forEach(f => {
+    document.getElementById('chipDate'.replace('date',f.charAt(0).toUpperCase()+f.slice(1))).style.display = 'none';
+    document.getElementById('input'+f.charAt(0).toUpperCase()+f.slice(1)).style.display = 'block';
+  });
+  document.getElementById('titleInput').focus();
+}
+
+function cancelEdit() {
+  const header = document.getElementById('detailHeader');
+  header.classList.remove('edit-mode');
+  document.getElementById('titleView').style.display = 'block';
+  document.getElementById('titleInput').style.display = 'none';
+  document.getElementById('locationView').style.display = 'flex';
+  document.getElementById('locationInput').style.display = 'none';
+  ['Date','Time','Duration'].forEach(f => {
+    document.getElementById('chip'+f).style.display = 'block';
+    document.getElementById('input'+f).style.display = 'none';
+  });
+}
+
+function saveEdit() {
+  // Read values from inputs and update view
+  const newTitle    = document.getElementById('titleInput').value;
+  const newLocation = document.getElementById('locationInput').value;
+  document.getElementById('titleView').textContent    = newTitle;
+  document.getElementById('locationText').textContent = newLocation;
+  cancelEdit();
+  toggleSync();
+}
+
+function focusEditField(fieldId) {
+  if (!document.getElementById('detailHeader').classList.contains('edit-mode')) return;
+  if (fieldId === 'titleField')    document.getElementById('titleInput').focus();
+  if (fieldId === 'locationField') document.getElementById('locationInput').focus();
+}
+
+function editMetaChip(field) {
+  const cap = field.charAt(0).toUpperCase() + field.slice(1);
+  const chip  = document.getElementById('chip' + cap);
+  const input = document.getElementById('input' + cap);
+  if (!chip || !input) return;
+  if (input.style.display === 'none' || input.style.display === '') {
+    chip.style.display = 'none';
+    input.style.display = 'block';
+    input.focus();
+  }
+}
+
+function updateChip(field) {
+  const cap = field.charAt(0).toUpperCase() + field.slice(1);
+  const input = document.getElementById('input' + cap);
+  const chip  = document.getElementById('chip' + cap);
+  if (!input || !chip) return;
+  if (field === 'date') {
+    const d = new Date(input.value + 'T00:00:00');
+    chip.textContent = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  } else if (field === 'time') {
+    chip.textContent = input.value;
+  } else {
+    chip.textContent = input.value;
+  }
+  chip.style.display = 'block';
+  input.style.display = 'none';
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+/* ── INIT ── */
+renderCalendar();
+renderTimes();
+</script>
+</body>
+</html>
