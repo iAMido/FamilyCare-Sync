@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, SafeAreaView, ActivityIndicator, Alert,
-  Modal, Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { DatePickerModal } from '../../components/common/DatePickerModal';
 import { updateTreatment } from '../../services/firestoreService';
 import { Treatment } from '../../types/Treatment';
 import { Colors } from '../../constants/colors';
@@ -23,18 +22,7 @@ export function EditTreatmentScreen({ treatment, onDone }: Props) {
   const [location, setLocation] = useState(treatment.location);
   const [date, setDate] = useState(new Date(treatment.dateTime));
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
-  const [tempDate, setTempDate] = useState(date);
   const [saving, setSaving] = useState(false);
-
-  function openPicker(mode: PickerMode) {
-    setTempDate(date);
-    setPickerMode(mode);
-  }
-
-  function confirmPicker() {
-    setDate(tempDate);
-    setPickerMode(null);
-  }
 
   async function handleSave() {
     if (!title.trim()) {
@@ -81,11 +69,11 @@ export function EditTreatmentScreen({ treatment, onDone }: Props) {
         />
 
         <Text style={styles.label}>Date & Time</Text>
-        <TouchableOpacity style={styles.dateRow} onPress={() => openPicker('date')}>
+        <TouchableOpacity style={styles.dateRow} onPress={() => setPickerMode('date')}>
           <Text style={styles.dateLabel}>📅  Date</Text>
           <Text style={styles.dateValue}>{dayjs(date).format('dddd, D MMMM YYYY')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.dateRow} onPress={() => openPicker('time')}>
+        <TouchableOpacity style={styles.dateRow} onPress={() => setPickerMode('time')}>
           <Text style={styles.dateLabel}>🕐  Time</Text>
           <Text style={styles.dateValue}>{dayjs(date).format('HH:mm')}</Text>
         </TouchableOpacity>
@@ -102,53 +90,23 @@ export function EditTreatmentScreen({ treatment, onDone }: Props) {
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={pickerMode !== null} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {pickerMode === 'date' ? '📅 Select Date' : '🕐 Select Time'}
-            </Text>
-            <DateTimePicker
-              value={tempDate}
-              mode={pickerMode ?? 'date'}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(_, d) => {
-                if (d) {
-                  if (Platform.OS === 'android') {
-                    if (pickerMode === 'date') {
-                      const nd = new Date(d);
-                      nd.setHours(date.getHours(), date.getMinutes());
-                      setDate(nd);
-                    } else {
-                      const nd = new Date(date);
-                      nd.setHours(d.getHours(), d.getMinutes());
-                      setDate(nd);
-                    }
-                    setPickerMode(null);
-                  } else {
-                    setTempDate(d);
-                  }
-                } else {
-                  setPickerMode(null);
-                }
-              }}
-              style={styles.picker}
-              textColor={Colors.textPrimary}
-              accentColor={Colors.primary}
-            />
-            {Platform.OS === 'ios' && (
-              <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={() => setPickerMode(null)} style={styles.modalCancelBtn}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={confirmPicker} style={styles.modalConfirmBtn}>
-                  <Text style={styles.modalConfirmText}>Confirm</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
+      <DatePickerModal
+        visible={pickerMode !== null}
+        mode={pickerMode ?? 'date'}
+        value={date}
+        onChange={(d: Date) => {
+          if (pickerMode === 'date') {
+            const nd = new Date(d);
+            nd.setHours(date.getHours(), date.getMinutes());
+            setDate(nd);
+          } else {
+            const nd = new Date(date);
+            nd.setHours(d.getHours(), d.getMinutes());
+            setDate(nd);
+          }
+        }}
+        onClose={() => setPickerMode(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -183,19 +141,4 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: Colors.textOnPrimary, fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl, padding: Spacing.lg, paddingBottom: 40,
-  },
-  modalTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary, textAlign: 'center', marginBottom: Spacing.md },
-  picker: { backgroundColor: Colors.surface },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.md },
-  modalCancelBtn: { padding: Spacing.md },
-  modalCancelText: { fontSize: FontSize.md, color: Colors.textSecondary },
-  modalConfirmBtn: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.sm,
-  },
-  modalConfirmText: { fontSize: FontSize.md, color: Colors.textOnPrimary, fontWeight: FontWeight.semibold },
 });
