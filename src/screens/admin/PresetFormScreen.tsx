@@ -32,6 +32,9 @@ export function PresetFormScreen() {
   const [protocolSteps, setProtocolSteps] = useState<ProtocolStep[]>(
     existing?.protocol?.steps ?? []
   );
+  const [totalCycles, setTotalCycles] = useState<string>(
+    existing?.totalCycles ? String(existing.totalCycles) : ''
+  );
   const [saving, setSaving] = useState(false);
 
   // ── Reminders ──
@@ -64,6 +67,7 @@ export function PresetFormScreen() {
     if (!name.trim()) { Alert.alert('Required', 'Please enter a name.'); return; }
     setSaving(true);
     try {
+      const parsedCycles = parseInt(totalCycles) || 0;
       const data: Omit<Preset, 'id'> = {
         name: name.trim(),
         icon,
@@ -72,6 +76,7 @@ export function PresetFormScreen() {
         protocol: protocolSteps.length > 0
           ? { steps: protocolSteps.filter((s) => s.presetId) }
           : undefined,
+        totalCycles: parsedCycles > 0 ? parsedCycles : null,
       };
       if (existing) {
         await updatePreset(existing.id, data);
@@ -141,6 +146,17 @@ export function PresetFormScreen() {
           onChangeText={setLocation}
           placeholder="e.g. Ichilov Hospital, Ward 4"
           placeholderTextColor={Colors.textMuted}
+        />
+
+        {/* Total cycles */}
+        <Text style={styles.label}>Total Cycles (optional)</Text>
+        <TextInput
+          style={styles.input}
+          value={totalCycles}
+          onChangeText={setTotalCycles}
+          placeholder="e.g. 6 for a 6-cycle chemo plan (leave blank if N/A)"
+          placeholderTextColor={Colors.textMuted}
+          keyboardType="numeric"
         />
 
         {/* Reminders */}

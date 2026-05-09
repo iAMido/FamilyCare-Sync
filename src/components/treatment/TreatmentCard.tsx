@@ -65,6 +65,13 @@ export function TreatmentCard({ treatment, escortName, onPress, dotColorIndex = 
               <Text style={[styles.statusText, { color: Colors.statusScheduled }]}>Scheduled</Text>
             </View>
           )}
+          {treatment.cycleNumber != null && (
+            <View style={styles.cycleChip}>
+              <Text style={styles.cycleText}>
+                {'C' + treatment.cycleNumber + (treatment.cycleTotal ? '/' + treatment.cycleTotal : '')}
+              </Text>
+            </View>
+          )}
           {escortName ? (
             <View style={styles.escortChip}>
               <View style={styles.escortDot} />
@@ -183,6 +190,17 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: FontSize.xs,
     fontWeight: FontWeight.semibold,
+  },
+  cycleChip: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: Colors.primary + '20',
+  },
+  cycleText: {
+    fontSize: FontSize.xs,
+    color: Colors.primary,
+    fontWeight: FontWeight.bold,
   },
   escortChip: {
     flexDirection: 'row',

@@ -40,6 +40,7 @@ service-account.json
 .env.local
 .env*.local
 *.env
+mail/*.json
 
 # Firebase
 .firebase/

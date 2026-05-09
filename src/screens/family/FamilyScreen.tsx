@@ -18,6 +18,7 @@ import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spa
 import { AppUser } from '../../types/User';
 import { EMAIL_WHITELIST } from '../../constants/emailWhitelist';
 import { AdminStackParamList } from '../../navigation/AppTabs';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type Nav = StackNavigationProp<AdminStackParamList, 'FamilyHome'>;
 
@@ -26,6 +27,7 @@ const AVATAR_COLORS = ['#6B9E7A', '#7B9ED9', '#C97BBD', '#E8734A', '#5BB5C3', '#
 export function FamilyScreen() {
   const navigation = useNavigation<Nav>();
   const { state, logout } = useAuth();
+  const { t, locale, setLocale } = useLanguage();
   const user = state.status === 'authenticated' ? state.user : null;
   const [members, setMembers] = useState<AppUser[]>([]);
 
@@ -37,11 +39,11 @@ export function FamilyScreen() {
 
   function confirmLogout() {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      t('sign_out_confirm'),
+      t('sign_out_confirm_msg'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: logout },
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('sign_out'), style: 'destructive', onPress: logout },
       ]
     );
   }
@@ -55,8 +57,8 @@ export function FamilyScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Family</Text>
-          <Text style={styles.headerSub}>Your care team</Text>
+          <Text style={styles.headerTitle}>{t('family_title')}</Text>
+          <Text style={styles.headerSub}>{t('family_subtitle')}</Text>
         </View>
 
         {/* Current user card */}
@@ -76,7 +78,7 @@ export function FamilyScreen() {
         )}
 
         {/* Family members */}
-        <Text style={styles.sectionTitle}>Members ({members.length})</Text>
+        <Text style={styles.sectionTitle}>{t('members', { count: members.length })}</Text>
 
         <View style={styles.membersCard}>
           {members.length === 0 ? (
@@ -102,11 +104,9 @@ export function FamilyScreen() {
         </View>
 
         {/* Authorized emails section */}
-        <Text style={styles.sectionTitle}>Authorized Emails</Text>
+        <Text style={styles.sectionTitle}>{t('authorized_emails')}</Text>
         <View style={styles.whitelistCard}>
-          <Text style={styles.whitelistNote}>
-            Only these email addresses can sign in to FamilyCare Sync.
-          </Text>
+          <Text style={styles.whitelistNote}>{t('authorized_emails_note')}</Text>
           {EMAIL_WHITELIST.map((email) => (
             <View key={email} style={styles.emailRow}>
               <View style={styles.emailDot} />
@@ -124,7 +124,7 @@ export function FamilyScreen() {
         </View>
 
         {/* Settings */}
-        <Text style={styles.sectionTitle}>Settings</Text>
+        <Text style={styles.sectionTitle}>{t('settings')}</Text>
         <View style={styles.settingsCard}>
           <TouchableOpacity
             style={styles.settingsRow}
@@ -132,16 +132,54 @@ export function FamilyScreen() {
           >
             <Text style={styles.settingsIcon}>🗂️</Text>
             <View style={styles.settingsInfo}>
-              <Text style={styles.settingsLabel}>Appointment Types</Text>
-              <Text style={styles.settingsSub}>Add, edit or configure protocols</Text>
+              <Text style={styles.settingsLabel}>{t('appointment_types')}</Text>
+              <Text style={styles.settingsSub}>{t('appointment_types_sub')}</Text>
             </View>
             <Text style={styles.settingsChevron}>›</Text>
           </TouchableOpacity>
+
+          <View style={styles.settingsDivider} />
+
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => navigation.navigate('Contacts')}
+          >
+            <Text style={styles.settingsIcon}>👨‍⚕️</Text>
+            <View style={styles.settingsInfo}>
+              <Text style={styles.settingsLabel}>{t('contacts_label')}</Text>
+              <Text style={styles.settingsSub}>{t('contacts_sub')}</Text>
+            </View>
+            <Text style={styles.settingsChevron}>›</Text>
+          </TouchableOpacity>
+
+          <View style={styles.settingsDivider} />
+
+          {/* Language toggle */}
+          <View style={styles.settingsRow}>
+            <Text style={styles.settingsIcon}>🌐</Text>
+            <View style={styles.settingsInfo}>
+              <Text style={styles.settingsLabel}>{t('language_label')}</Text>
+            </View>
+            <View style={styles.langToggle}>
+              <TouchableOpacity
+                style={[styles.langBtn, locale === 'en' && styles.langBtnActive]}
+                onPress={() => setLocale('en')}
+              >
+                <Text style={[styles.langBtnText, locale === 'en' && styles.langBtnTextActive]}>EN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.langBtn, locale === 'he' && styles.langBtnActive]}
+                onPress={() => setLocale('he')}
+              >
+                <Text style={[styles.langBtnText, locale === 'he' && styles.langBtnTextActive]}>עב</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         {/* Sign out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={confirmLogout}>
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>{t('sign_out')}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -351,11 +389,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     padding: Spacing.md, gap: Spacing.md,
   },
+  settingsDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: Spacing.md,
+  },
   settingsIcon: { fontSize: 22 },
   settingsInfo: { flex: 1 },
   settingsLabel: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
   settingsSub: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 1 },
   settingsChevron: { fontSize: FontSize.xl, color: Colors.textMuted },
+  langToggle: {
+    flexDirection: 'row',
+    borderRadius: BorderRadius.full,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: Colors.surface,
+  },
+  langBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  langBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+  },
+  langBtnTextActive: {
+    color: Colors.textOnPrimary,
+  },
   // Sign out
   signOutBtn: {
     backgroundColor: Colors.surface,

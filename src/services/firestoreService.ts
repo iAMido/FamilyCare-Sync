@@ -15,8 +15,8 @@ import {
 import { db } from '../config/firebase';
 import { Treatment, TreatmentStatus } from '../types/Treatment';
 import { Preset } from '../types/Preset';
+import { Contact } from '../types/Contact';
 import { AppUser } from '../types/User';
-import dayjs from 'dayjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,6 +36,8 @@ function treatmentFromFirestore(id: string, data: Record<string, any>): Treatmen
     protocolGroupId: data.protocolGroupId ?? null,
     protocolRole: data.protocolRole ?? undefined,
     cycleNumber: data.cycleNumber ?? null,
+    cycleTotal: data.cycleTotal ?? null,
+    sideEffects: data.sideEffects ?? [],
   };
 }
 
@@ -113,6 +115,43 @@ export async function updatePreset(id: string, data: Omit<Preset, 'id'>): Promis
 
 export async function deletePreset(id: string): Promise<void> {
   await deleteDoc(doc(db, 'presets', id));
+}
+
+// ── Contacts ──────────────────────────────────────────────────────────────────
+
+function contactFromFirestore(id: string, data: Record<string, any>): Contact {
+  return {
+    id,
+    name: data.name ?? '',
+    role: data.role ?? 'other',
+    phone: data.phone ?? undefined,
+    email: data.email ?? undefined,
+    hospital: data.hospital ?? undefined,
+    department: data.department ?? undefined,
+    notes: data.notes ?? undefined,
+    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
+  };
+}
+
+export async function getContacts(): Promise<Contact[]> {
+  const snap = await getDocs(query(collection(db, 'contacts'), orderBy('name')));
+  return snap.docs.map((d) => contactFromFirestore(d.id, d.data()));
+}
+
+export async function createContact(data: Omit<Contact, 'id' | 'createdAt'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'contacts'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function updateContact(id: string, data: Omit<Contact, 'id' | 'createdAt'>): Promise<void> {
+  await setDoc(doc(db, 'contacts', id), data, { merge: true });
+}
+
+export async function deleteContact(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'contacts', id));
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────

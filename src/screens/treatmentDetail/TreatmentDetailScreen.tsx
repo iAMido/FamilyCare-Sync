@@ -24,6 +24,8 @@ import dayjs from 'dayjs';
 import { PostVisitSummary } from './PostVisitSummary';
 import { EscortManager } from './EscortManager';
 import { EditTreatmentScreen } from './EditTreatmentScreen';
+import { SideEffectLogger } from './SideEffectLogger';
+import { SideEffect } from '../../types/Treatment';
 
 type TreatmentDetailRouteProp = RouteProp<DashboardStackParamList, 'TreatmentDetail'>;
 
@@ -100,6 +102,11 @@ export function TreatmentDetailScreen() {
 
   const statusLabel = isCancelled ? 'Cancelled' : isCompleted ? 'Completed' : 'Scheduled';
 
+  async function handleSideEffectsChange(effects: SideEffect[]) {
+    await updateTreatment(treatmentId, { sideEffects: effects });
+    await loadData();
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       {/* Top bar */}
@@ -123,10 +130,19 @@ export function TreatmentDetailScreen() {
       >
         {/* Hero card */}
         <View style={styles.heroCard}>
-          {/* Status badge */}
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '18' }]}>
-            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-            <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+          {/* Status badge + cycle badge row */}
+          <View style={styles.badgeRow}>
+            <View style={[styles.statusBadge, { backgroundColor: statusColor + '18' }]}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+            </View>
+            {treatment.cycleNumber != null && (
+              <View style={styles.cycleBadge}>
+                <Text style={styles.cycleBadgeText}>
+                  {'C' + treatment.cycleNumber + (treatment.cycleTotal ? '/' + treatment.cycleTotal : '')}
+                </Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.heroTitle}>{treatment.title}</Text>
@@ -191,6 +207,17 @@ export function TreatmentDetailScreen() {
               treatment={treatment}
               currentUser={user}
               onUpdate={loadData}
+            />
+          </View>
+        )}
+
+        {/* Side effect logger — shown after the appointment date */}
+        {(isPast || isCompleted || isCancelled) && (
+          <View style={styles.sideEffectsSection}>
+            <SideEffectLogger
+              sideEffects={treatment.sideEffects ?? []}
+              onChange={handleSideEffectsChange}
+              readonly={isCancelled}
             />
           </View>
         )}
@@ -270,6 +297,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap: Spacing.sm,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -278,6 +311,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     paddingHorizontal: 10,
     paddingVertical: 4,
+  },
+  cycleBadge: {
+    backgroundColor: Colors.primary + '20',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  cycleBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
   },
   statusDot: {
     width: 7,
@@ -357,6 +401,9 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+    marginBottom: Spacing.md,
+  },
+  sideEffectsSection: {
     marginBottom: Spacing.md,
   },
   // Actions

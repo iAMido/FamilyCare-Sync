@@ -3,6 +3,7 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { LanguageProvider } from './src/contexts/LanguageContext';
 
 interface ErrorState { error: Error | null }
 
@@ -33,9 +34,11 @@ const eb = StyleSheet.create({
 export default function App() {
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={styles.root}>
-        <RootNavigator />
-      </GestureHandlerRootView>
+      <LanguageProvider>
+        <GestureHandlerRootView style={styles.root}>
+          <RootNavigator />
+        </GestureHandlerRootView>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

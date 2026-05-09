@@ -21,4 +21,6 @@ export interface Preset {
   protocol?: {
     steps: ProtocolStep[];
   };
+  /** If set, the patient is going through N cycles (e.g. 6 chemo cycles) */
+  totalCycles?: number | null;
 }

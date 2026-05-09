@@ -9,10 +9,13 @@ import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { FamilyScreen } from '../screens/family/FamilyScreen';
 import { PresetManagementScreen } from '../screens/admin/PresetManagementScreen';
 import { PresetFormScreen } from '../screens/admin/PresetFormScreen';
+import { ContactsScreen } from '../screens/contacts/ContactsScreen';
+import { ContactFormScreen } from '../screens/contacts/ContactFormScreen';
 import { Colors } from '../constants/colors';
 import { FontSize, FontWeight } from '../constants/spacing';
 import { AppUser } from '../types/User';
 import { Preset } from '../types/Preset';
+import { Contact } from '../types/Contact';
 
 // ── Navigator param lists ────────────────────────────────────────────────────
 
@@ -31,6 +34,8 @@ export type AdminStackParamList = {
   FamilyHome: undefined;
   PresetManagement: undefined;
   PresetForm: { preset: Preset | undefined };
+  Contacts: undefined;
+  ContactForm: { contact: Contact | undefined };
 };
 
 // ── Stack navigators ─────────────────────────────────────────────────────────
@@ -65,6 +70,8 @@ function FamilyStack() {
       <AdminStack.Screen name="FamilyHome" component={FamilyScreen} />
       <AdminStack.Screen name="PresetManagement" component={PresetManagementScreen} />
       <AdminStack.Screen name="PresetForm" component={PresetFormScreen} />
+      <AdminStack.Screen name="Contacts" component={ContactsScreen} />
+      <AdminStack.Screen name="ContactForm" component={ContactFormScreen} />
     </AdminStack.Navigator>
   );
 }

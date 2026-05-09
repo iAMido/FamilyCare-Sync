@@ -35,6 +35,8 @@ export function QuickCreateScreen() {
   const [enabledReminders, setEnabledReminders] = useState<Record<number, boolean>>({});
   // Protocol: which steps are enabled (by index)
   const [enabledSteps, setEnabledSteps] = useState<Record<number, boolean>>({});
+  // Cycle tracker
+  const [cycleNumber, setCycleNumber] = useState<number>(1);
 
   function selectPreset(preset: Preset) {
     setSelectedPreset(preset);
@@ -45,6 +47,8 @@ export function QuickCreateScreen() {
     const stepDefaults: Record<number, boolean> = {};
     preset.protocol?.steps?.forEach((_, i) => { stepDefaults[i] = true; });
     setEnabledSteps(stepDefaults);
+    // Reset cycle number
+    setCycleNumber(1);
     setStep('datetime');
   }
 
@@ -81,14 +85,16 @@ export function QuickCreateScreen() {
     if (!selectedPreset || !user) return;
     setSaving(true);
     try {
+      const hasCycles = (selectedPreset.totalCycles ?? 0) > 0;
       const mainData = {
         presetId: selectedPreset.id,
-        title: selectedPreset.name,
+        title: selectedPreset.name + (hasCycles ? ` (C${cycleNumber}/${selectedPreset.totalCycles})` : ''),
         location: selectedPreset.defaultLocation,
         dateTime: date,
         escortId: null,
         summary: null,
         createdBy: user.uid,
+        ...(hasCycles ? { cycleNumber, cycleTotal: selectedPreset.totalCycles } : {}),
       };
 
       let mainId: string;
@@ -254,6 +260,31 @@ export function QuickCreateScreen() {
               </View>
             </>
           ) : null}
+
+          {/* ── Cycle picker ── */}
+          {(selectedPreset.totalCycles ?? 0) > 0 && (
+            <>
+              <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Cycle</Text>
+              <View style={styles.cycleBox}>
+                <TouchableOpacity
+                  style={styles.cycleArrow}
+                  onPress={() => setCycleNumber(Math.max(1, cycleNumber - 1))}
+                >
+                  <Text style={styles.cycleArrowText}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.cycleCenter}>
+                  <Text style={styles.cycleNumber}>{cycleNumber}</Text>
+                  <Text style={styles.cycleOf}>of {selectedPreset.totalCycles}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.cycleArrow}
+                  onPress={() => setCycleNumber(Math.min(selectedPreset.totalCycles!, cycleNumber + 1))}
+                >
+                  <Text style={styles.cycleArrowText}>＋</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
           {/* ── Protocol steps ── */}
           {hasProtocol && (
@@ -452,6 +483,24 @@ const styles = StyleSheet.create({
   },
   locationIcon: { fontSize: 18 },
   locationText: { flex: 1, fontSize: FontSize.md, color: Colors.textPrimary },
+  // Cycle picker
+  cycleBox: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: BorderRadius.xl,
+    borderWidth: 1, borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  cycleArrow: {
+    width: 52, height: 52,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.primaryBg,
+  },
+  cycleArrowText: { fontSize: 24, color: Colors.primary, fontWeight: FontWeight.bold },
+  cycleCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  cycleNumber: {
+    fontSize: FontSize.xxl, fontWeight: FontWeight.bold, color: Colors.textPrimary,
+  },
+  cycleOf: { fontSize: FontSize.sm, color: Colors.textMuted },
   // Protocol
   protocolHeader: { marginTop: Spacing.lg, marginBottom: Spacing.sm },
   protocolSubtitle: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },

@@ -24,4 +24,17 @@ export interface Treatment {
   protocolRole?: 'main' | 'step';
   /** cycle number if part of a cycle plan (e.g. 3 of 6) */
   cycleNumber?: number | null;
+  /** total number of cycles in the plan (copied from preset at creation time) */
+  cycleTotal?: number | null;
+  /** side effects logged after the appointment */
+  sideEffects?: SideEffect[];
+}
+
+export type SideEffectSeverity = 'mild' | 'moderate' | 'severe';
+
+export interface SideEffect {
+  id: string;
+  description: string;
+  severity: SideEffectSeverity;
+  loggedAt: Date;
 }
