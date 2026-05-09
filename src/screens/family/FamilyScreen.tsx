@@ -9,16 +9,22 @@ import {
   Alert,
 } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { AppUser } from '../../types/User';
 import { EMAIL_WHITELIST } from '../../constants/emailWhitelist';
+import { AdminStackParamList } from '../../navigation/AppTabs';
+
+type Nav = StackNavigationProp<AdminStackParamList, 'FamilyHome'>;
 
 const AVATAR_COLORS = ['#6B9E7A', '#7B9ED9', '#C97BBD', '#E8734A', '#5BB5C3', '#F5A623'];
 
 export function FamilyScreen() {
+  const navigation = useNavigation<Nav>();
   const { state, logout } = useAuth();
   const user = state.status === 'authenticated' ? state.user : null;
   const [members, setMembers] = useState<AppUser[]>([]);
@@ -115,6 +121,22 @@ export function FamilyScreen() {
           <Text style={styles.infoText}>
             A private family app for coordinating medical appointments, escorts, and care.
           </Text>
+        </View>
+
+        {/* Settings */}
+        <Text style={styles.sectionTitle}>Settings</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => navigation.navigate('PresetManagement')}
+          >
+            <Text style={styles.settingsIcon}>🗂️</Text>
+            <View style={styles.settingsInfo}>
+              <Text style={styles.settingsLabel}>Appointment Types</Text>
+              <Text style={styles.settingsSub}>Add, edit or configure protocols</Text>
+            </View>
+            <Text style={styles.settingsChevron}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Sign out */}
@@ -317,6 +339,23 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 20,
   },
+  // Settings
+  settingsCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  settingsRow: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: Spacing.md, gap: Spacing.md,
+  },
+  settingsIcon: { fontSize: 22 },
+  settingsInfo: { flex: 1 },
+  settingsLabel: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
+  settingsSub: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 1 },
+  settingsChevron: { fontSize: FontSize.xl, color: Colors.textMuted },
   // Sign out
   signOutBtn: {
     backgroundColor: Colors.surface,

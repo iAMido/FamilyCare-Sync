@@ -2,7 +2,7 @@ export type TreatmentStatus = 'scheduled' | 'completed' | 'cancelled';
 
 export interface TreatmentSummary {
   text: string;
-  attachments: string[];
+  attachments: string[];   // Firebase Storage download URLs
   updatedAt?: Date;
 }
 
@@ -18,4 +18,10 @@ export interface Treatment {
   calendarEventId: string | null;
   createdAt?: Date;
   createdBy?: string;
+  /** Shared across all appointments created together from a protocol */
+  protocolGroupId?: string | null;
+  /** Whether this is the anchor appointment or a generated step */
+  protocolRole?: 'main' | 'step';
+  /** cycle number if part of a cycle plan (e.g. 3 of 6) */
+  cycleNumber?: number | null;
 }

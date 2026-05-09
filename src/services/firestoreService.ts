@@ -2,22 +2,25 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
+  deleteDoc,
   getDoc,
   getDocs,
   query,
-  where,
   orderBy,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Treatment, TreatmentStatus } from '../types/Treatment';
+import { Preset } from '../types/Preset';
 import { AppUser } from '../types/User';
+import dayjs from 'dayjs';
 
-// ── Treatments ──────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function fromFirestore(id: string, data: Record<string, any>): Treatment {
+function treatmentFromFirestore(id: string, data: Record<string, any>): Treatment {
   return {
     id,
     presetId: data.presetId ?? '',
@@ -30,11 +33,16 @@ function fromFirestore(id: string, data: Record<string, any>): Treatment {
     calendarEventId: data.calendarEventId ?? null,
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
     createdBy: data.createdBy,
+    protocolGroupId: data.protocolGroupId ?? null,
+    protocolRole: data.protocolRole ?? undefined,
+    cycleNumber: data.cycleNumber ?? null,
   };
 }
 
+// ── Treatments ────────────────────────────────────────────────────────────────
+
 export async function createTreatment(
-  data: Omit<Treatment, 'id' | 'status' | 'calendarEventId' | 'createdAt'> & { createdBy: string }
+  data: Omit<Treatment, 'id' | 'status' | 'calendarEventId' | 'createdAt'>
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'treatments'), {
     ...data,
@@ -46,6 +54,35 @@ export async function createTreatment(
   return ref.id;
 }
 
+/**
+ * Create a main appointment + all its protocol step appointments atomically.
+ * Returns the main appointment ID.
+ */
+export async function createProtocolGroup(
+  main: Omit<Treatment, 'id' | 'status' | 'calendarEventId' | 'createdAt'>,
+  steps: Array<Omit<Treatment, 'id' | 'status' | 'calendarEventId' | 'createdAt'>>
+): Promise<string> {
+  // Use a client-side UUID for the group
+  const groupId = `grp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const mainWithGroup: typeof main = {
+    ...main,
+    protocolGroupId: groupId,
+    protocolRole: 'main',
+  };
+  const mainId = await createTreatment(mainWithGroup);
+
+  for (const step of steps) {
+    await createTreatment({
+      ...step,
+      protocolGroupId: groupId,
+      protocolRole: 'step',
+    });
+  }
+
+  return mainId;
+}
+
 export async function updateTreatment(id: string, patch: Partial<Treatment>): Promise<void> {
   const ref = doc(db, 'treatments', id);
   const { id: _id, ...rest } = patch as any;
@@ -55,10 +92,30 @@ export async function updateTreatment(id: string, patch: Partial<Treatment>): Pr
 export async function getTreatmentById(id: string): Promise<Treatment | null> {
   const snap = await getDoc(doc(db, 'treatments', id));
   if (!snap.exists()) return null;
-  return fromFirestore(snap.id, snap.data());
+  return treatmentFromFirestore(snap.id, snap.data());
 }
 
-// ── Users ────────────────────────────────────────────────────────────────────
+// ── Presets ───────────────────────────────────────────────────────────────────
+
+export async function getPresets(): Promise<Preset[]> {
+  const snap = await getDocs(collection(db, 'presets'));
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Preset, 'id'>) }));
+}
+
+export async function createPreset(data: Omit<Preset, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'presets'), data);
+  return ref.id;
+}
+
+export async function updatePreset(id: string, data: Omit<Preset, 'id'>): Promise<void> {
+  await setDoc(doc(db, 'presets', id), data);
+}
+
+export async function deletePreset(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'presets', id));
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
 
 export async function getFamilyMembers(): Promise<AppUser[]> {
   const snap = await getDocs(collection(db, 'users'));

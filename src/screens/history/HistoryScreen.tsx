@@ -13,11 +13,11 @@ import { Colors, DotColors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { Treatment } from '../../types/Treatment';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { DashboardStackParamList } from '../../navigation/AppTabs';
+import { HistoryStackParamList } from '../../navigation/AppTabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import dayjs from 'dayjs';
 
-type Nav = StackNavigationProp<DashboardStackParamList, 'DashboardHome'>;
+type Nav = StackNavigationProp<HistoryStackParamList, 'HistoryHome'>;
 
 type FilterType = 'all' | 'completed' | 'cancelled';
 

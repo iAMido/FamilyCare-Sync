@@ -58,7 +58,22 @@ export function DashboardScreen() {
   if (loading) return <LoadingSpinner />;
 
   // Upcoming (scheduled, future) — excluding the next one shown in hero
-  const upcomingRest = upcoming.filter((t) => t.id !== nextTreatment?.id);
+  // Group protocol steps under their main appointment
+  const upcomingRest = upcoming.filter((t) => {
+    if (t.id === nextTreatment?.id) return false;
+    // Hide protocol steps — they'll be shown nested under the main appointment
+    if (t.protocolRole === 'step') return false;
+    return true;
+  });
+
+  // Map: protocolGroupId → step appointments (for inline display)
+  const protocolStepsMap: Record<string, Treatment[]> = {};
+  upcoming.forEach((t) => {
+    if (t.protocolRole === 'step' && t.protocolGroupId) {
+      if (!protocolStepsMap[t.protocolGroupId]) protocolStepsMap[t.protocolGroupId] = [];
+      protocolStepsMap[t.protocolGroupId].push(t);
+    }
+  });
 
   const firstName = user?.displayName?.split(' ')[0] ?? 'there';
   const hour = dayjs().hour();
@@ -123,16 +138,45 @@ export function DashboardScreen() {
             )}
           </>
         }
-        renderItem={({ item, index }) => (
-          <View style={styles.timelineItem}>
-            <TreatmentCard
-              treatment={item}
-              escortName={item.escortId ? familyMap[item.escortId] : undefined}
-              onPress={() => navigation.navigate('TreatmentDetail', { treatmentId: item.id })}
-              dotColorIndex={index + 1}
-            />
-          </View>
-        )}
+        renderItem={({ item, index }) => {
+          const linkedSteps = item.protocolGroupId
+            ? (protocolStepsMap[item.protocolGroupId] ?? [])
+            : [];
+          return (
+            <View style={styles.timelineItem}>
+              <TreatmentCard
+                treatment={item}
+                escortName={item.escortId ? familyMap[item.escortId] : undefined}
+                onPress={() => navigation.navigate('TreatmentDetail', { treatmentId: item.id })}
+                dotColorIndex={index + 1}
+              />
+              {/* Protocol sub-steps */}
+              {linkedSteps.length > 0 && (
+                <View style={styles.subSteps}>
+                  <View style={styles.subStepsLine} />
+                  <View style={styles.subStepsList}>
+                    {linkedSteps.map((step) => (
+                      <TouchableOpacity
+                        key={step.id}
+                        style={styles.subStep}
+                        onPress={() => navigation.navigate('TreatmentDetail', { treatmentId: step.id })}
+                      >
+                        <View style={styles.subStepDot} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.subStepTitle}>{step.title}</Text>
+                          <Text style={styles.subStepDate}>
+                            {dayjs(step.dateTime).format('ddd D MMM · HH:mm')}
+                          </Text>
+                        </View>
+                        <Text style={styles.subStepChevron}>›</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        }}
         ListEmptyComponent={
           nextTreatment ? null : (
             <View style={styles.emptyList}>
@@ -260,6 +304,38 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
   },
+  // Protocol sub-steps
+  subSteps: {
+    flexDirection: 'row',
+    marginLeft: 14,
+    marginBottom: Spacing.sm,
+    marginTop: -4,
+  },
+  subStepsLine: {
+    width: 2,
+    backgroundColor: Colors.primary + '40',
+    marginLeft: 12,
+    marginRight: 10,
+    borderRadius: 1,
+  },
+  subStepsList: { flex: 1, gap: 4 },
+  subStep: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.primaryBg,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primary + '25',
+  },
+  subStepDot: {
+    width: 7, height: 7, borderRadius: 3.5,
+    backgroundColor: Colors.primary,
+  },
+  subStepTitle: {
+    fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textPrimary,
+  },
+  subStepDate: { fontSize: FontSize.xs, color: Colors.textSecondary },
+  subStepChevron: { fontSize: FontSize.lg, color: Colors.textMuted },
   fab: {
     position: 'absolute',
     bottom: 28,

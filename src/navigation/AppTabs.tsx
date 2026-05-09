@@ -7,9 +7,14 @@ import { TreatmentDetailScreen } from '../screens/treatmentDetail/TreatmentDetai
 import { QuickCreateScreen } from '../screens/quickCreate/QuickCreateScreen';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { FamilyScreen } from '../screens/family/FamilyScreen';
+import { PresetManagementScreen } from '../screens/admin/PresetManagementScreen';
+import { PresetFormScreen } from '../screens/admin/PresetFormScreen';
 import { Colors } from '../constants/colors';
 import { FontSize, FontWeight } from '../constants/spacing';
 import { AppUser } from '../types/User';
+import { Preset } from '../types/Preset';
+
+// ── Navigator param lists ────────────────────────────────────────────────────
 
 export type DashboardStackParamList = {
   DashboardHome: undefined;
@@ -17,26 +22,23 @@ export type DashboardStackParamList = {
   QuickCreate: undefined;
 };
 
-const Tab = createBottomTabNavigator();
-const DashStack = createStackNavigator<DashboardStackParamList>();
-
-// SVG-free icons using emoji/unicode
-const TAB_ICONS: Record<string, { default: string; active: string }> = {
-  Home: { default: '⌂', active: '⌂' },
-  History: { default: '◷', active: '◷' },
-  Family: { default: '♡', active: '♡' },
+export type HistoryStackParamList = {
+  HistoryHome: undefined;
+  TreatmentDetail: { treatmentId: string };
 };
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  return (
-    <View style={[styles.tabItem, focused && styles.tabItemActive]}>
-      <Text style={[styles.tabEmoji, focused && styles.tabEmojiActive]}>
-        {name === 'Home' ? '🏠' : name === 'History' ? '📋' : '👨‍👩‍👧‍👦'}
-      </Text>
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{name}</Text>
-    </View>
-  );
-}
+export type AdminStackParamList = {
+  FamilyHome: undefined;
+  PresetManagement: undefined;
+  PresetForm: { preset: Preset | undefined };
+};
+
+// ── Stack navigators ─────────────────────────────────────────────────────────
+
+const Tab       = createBottomTabNavigator();
+const DashStack = createStackNavigator<DashboardStackParamList>();
+const HistStack = createStackNavigator<HistoryStackParamList>();
+const AdminStack= createStackNavigator<AdminStackParamList>();
 
 function DashboardStack() {
   return (
@@ -47,6 +49,42 @@ function DashboardStack() {
     </DashStack.Navigator>
   );
 }
+
+function HistoryStack() {
+  return (
+    <HistStack.Navigator screenOptions={{ headerShown: false }}>
+      <HistStack.Screen name="HistoryHome" component={HistoryScreen} />
+      <HistStack.Screen name="TreatmentDetail" component={TreatmentDetailScreen} />
+    </HistStack.Navigator>
+  );
+}
+
+function FamilyStack() {
+  return (
+    <AdminStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminStack.Screen name="FamilyHome" component={FamilyScreen} />
+      <AdminStack.Screen name="PresetManagement" component={PresetManagementScreen} />
+      <AdminStack.Screen name="PresetForm" component={PresetFormScreen} />
+    </AdminStack.Navigator>
+  );
+}
+
+// ── Tab icon ─────────────────────────────────────────────────────────────────
+
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const emoji =
+    name === 'Home' ? '🏠' :
+    name === 'History' ? '📋' :
+    '👨‍👩‍👧‍👦';
+  return (
+    <View style={styles.tabItem}>
+      <Text style={[styles.tabEmoji, focused && styles.tabEmojiActive]}>{emoji}</Text>
+      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{name}</Text>
+    </View>
+  );
+}
+
+// ── App tabs ─────────────────────────────────────────────────────────────────
 
 export function AppTabs({ user }: { user: AppUser }) {
   return (
@@ -64,17 +102,19 @@ export function AppTabs({ user }: { user: AppUser }) {
       />
       <Tab.Screen
         name="History"
-        component={HistoryScreen}
+        component={HistoryStack}
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="History" focused={focused} /> }}
       />
       <Tab.Screen
         name="Family"
-        component={FamilyScreen}
+        component={FamilyStack}
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="Family" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
 }
+
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   tabBar: {
@@ -90,30 +130,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  tabItem: {
-    alignItems: 'center',
-    paddingTop: 6,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-  },
-  tabItemActive: {
-    // subtle highlight
-  },
-  tabEmoji: {
-    fontSize: 22,
-    opacity: 0.45,
-  },
-  tabEmojiActive: {
-    opacity: 1,
-  },
+  tabItem: { alignItems: 'center', paddingTop: 6 },
+  tabEmoji: { fontSize: 22, opacity: 0.45 },
+  tabEmojiActive: { opacity: 1 },
   tabLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    marginTop: 2,
-    fontWeight: FontWeight.medium,
+    fontSize: 10, color: Colors.textMuted, marginTop: 2, fontWeight: FontWeight.medium,
   },
-  tabLabelActive: {
-    color: Colors.primary,
-    fontWeight: FontWeight.bold,
-  },
+  tabLabelActive: { color: Colors.primary, fontWeight: FontWeight.bold },
 });
