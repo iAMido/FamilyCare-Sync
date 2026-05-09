@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AdminStackParamList } from '../../navigation/AppTabs';
+import { VaultStackParamList } from '../../navigation/AppTabs';
 import { Contact, ContactRole } from '../../types/Contact';
 import { getContacts, deleteContact } from '../../services/firestoreService';
 import { Colors } from '../../constants/colors';
@@ -19,7 +19,8 @@ import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spa
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-type Nav = StackNavigationProp<AdminStackParamList, 'Contacts'>;
+// Note: ContactsScreen is superseded by VaultScreen. Kept for reference only.
+type Nav = StackNavigationProp<VaultStackParamList, 'VaultHome'>;
 
 const ROLE_ICONS: Record<ContactRole, string> = {
   oncologist: '🩺',

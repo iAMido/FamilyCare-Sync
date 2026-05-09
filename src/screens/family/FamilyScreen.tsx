@@ -17,10 +17,10 @@ import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { AppUser } from '../../types/User';
 import { EMAIL_WHITELIST } from '../../constants/emailWhitelist';
-import { AdminStackParamList } from '../../navigation/AppTabs';
+import { SettingsStackParamList } from '../../navigation/AppTabs';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-type Nav = StackNavigationProp<AdminStackParamList, 'FamilyHome'>;
+type Nav = StackNavigationProp<SettingsStackParamList, 'SettingsHome'>;
 
 const AVATAR_COLORS = ['#6B9E7A', '#7B9ED9', '#C97BBD', '#E8734A', '#5BB5C3', '#F5A623'];
 
@@ -57,8 +57,8 @@ export function FamilyScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('family_title')}</Text>
-          <Text style={styles.headerSub}>{t('family_subtitle')}</Text>
+          <Text style={styles.headerTitle}>Settings ⚙️</Text>
+          <Text style={styles.headerSub}>App settings & family</Text>
         </View>
 
         {/* Current user card */}
@@ -134,20 +134,6 @@ export function FamilyScreen() {
             <View style={styles.settingsInfo}>
               <Text style={styles.settingsLabel}>{t('appointment_types')}</Text>
               <Text style={styles.settingsSub}>{t('appointment_types_sub')}</Text>
-            </View>
-            <Text style={styles.settingsChevron}>›</Text>
-          </TouchableOpacity>
-
-          <View style={styles.settingsDivider} />
-
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={() => navigation.navigate('Contacts')}
-          >
-            <Text style={styles.settingsIcon}>👨‍⚕️</Text>
-            <View style={styles.settingsInfo}>
-              <Text style={styles.settingsLabel}>{t('contacts_label')}</Text>
-              <Text style={styles.settingsSub}>{t('contacts_sub')}</Text>
             </View>
             <Text style={styles.settingsChevron}>›</Text>
           </TouchableOpacity>

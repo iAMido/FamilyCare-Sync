@@ -9,7 +9,7 @@ import { HistoryScreen } from '../screens/history/HistoryScreen';
 import { FamilyScreen } from '../screens/family/FamilyScreen';
 import { PresetManagementScreen } from '../screens/admin/PresetManagementScreen';
 import { PresetFormScreen } from '../screens/admin/PresetFormScreen';
-import { ContactsScreen } from '../screens/contacts/ContactsScreen';
+import { VaultScreen } from '../screens/vault/VaultScreen';
 import { ContactFormScreen } from '../screens/contacts/ContactFormScreen';
 import { Colors } from '../constants/colors';
 import { FontSize, FontWeight } from '../constants/spacing';
@@ -30,20 +30,27 @@ export type HistoryStackParamList = {
   TreatmentDetail: { treatmentId: string };
 };
 
-export type AdminStackParamList = {
-  FamilyHome: undefined;
-  PresetManagement: undefined;
-  PresetForm: { preset: Preset | undefined };
-  Contacts: undefined;
+export type VaultStackParamList = {
+  VaultHome: undefined;
   ContactForm: { contact: Contact | undefined };
 };
 
+export type SettingsStackParamList = {
+  SettingsHome: undefined;
+  PresetManagement: undefined;
+  PresetForm: { preset: Preset | undefined };
+};
+
+// Keep backward-compat alias (some screens import AdminStackParamList)
+export type AdminStackParamList = SettingsStackParamList;
+
 // ── Stack navigators ─────────────────────────────────────────────────────────
 
-const Tab       = createBottomTabNavigator();
-const DashStack = createStackNavigator<DashboardStackParamList>();
-const HistStack = createStackNavigator<HistoryStackParamList>();
-const AdminStack= createStackNavigator<AdminStackParamList>();
+const Tab          = createBottomTabNavigator();
+const DashStack    = createStackNavigator<DashboardStackParamList>();
+const HistStack    = createStackNavigator<HistoryStackParamList>();
+const VaultStack   = createStackNavigator<VaultStackParamList>();
+const SettingsStack= createStackNavigator<SettingsStackParamList>();
 
 function DashboardStack() {
   return (
@@ -64,15 +71,22 @@ function HistoryStack() {
   );
 }
 
-function FamilyStack() {
+function VaultStackNavigator() {
   return (
-    <AdminStack.Navigator screenOptions={{ headerShown: false }}>
-      <AdminStack.Screen name="FamilyHome" component={FamilyScreen} />
-      <AdminStack.Screen name="PresetManagement" component={PresetManagementScreen} />
-      <AdminStack.Screen name="PresetForm" component={PresetFormScreen} />
-      <AdminStack.Screen name="Contacts" component={ContactsScreen} />
-      <AdminStack.Screen name="ContactForm" component={ContactFormScreen} />
-    </AdminStack.Navigator>
+    <VaultStack.Navigator screenOptions={{ headerShown: false }}>
+      <VaultStack.Screen name="VaultHome" component={VaultScreen} />
+      <VaultStack.Screen name="ContactForm" component={ContactFormScreen} />
+    </VaultStack.Navigator>
+  );
+}
+
+function SettingsStackNavigator() {
+  return (
+    <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
+      <SettingsStack.Screen name="SettingsHome" component={FamilyScreen} />
+      <SettingsStack.Screen name="PresetManagement" component={PresetManagementScreen} />
+      <SettingsStack.Screen name="PresetForm" component={PresetFormScreen} />
+    </SettingsStack.Navigator>
   );
 }
 
@@ -80,9 +94,10 @@ function FamilyStack() {
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const emoji =
-    name === 'Home' ? '🏠' :
-    name === 'History' ? '📋' :
-    '👨‍👩‍👧‍👦';
+    name === 'Home'     ? '🏠' :
+    name === 'History'  ? '📋' :
+    name === 'Vault'    ? '🔒' :
+                          '⚙️';
   return (
     <View style={styles.tabItem}>
       <Text style={[styles.tabEmoji, focused && styles.tabEmojiActive]}>{emoji}</Text>
@@ -113,9 +128,14 @@ export function AppTabs({ user }: { user: AppUser }) {
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="History" focused={focused} /> }}
       />
       <Tab.Screen
-        name="Family"
-        component={FamilyStack}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Family" focused={focused} /> }}
+        name="Vault"
+        component={VaultStackNavigator}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Vault" focused={focused} /> }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsStackNavigator}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Settings" focused={focused} /> }}
       />
     </Tab.Navigator>
   );

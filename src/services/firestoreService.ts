@@ -7,8 +7,6 @@ import {
   deleteDoc,
   getDoc,
   getDocs,
-  query,
-  orderBy,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
@@ -134,8 +132,10 @@ function contactFromFirestore(id: string, data: Record<string, any>): Contact {
 }
 
 export async function getContacts(): Promise<Contact[]> {
-  const snap = await getDocs(query(collection(db, 'contacts'), orderBy('name')));
-  return snap.docs.map((d) => contactFromFirestore(d.id, d.data()));
+  const snap = await getDocs(collection(db, 'contacts'));
+  return snap.docs
+    .map((d) => contactFromFirestore(d.id, d.data()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function createContact(data: Omit<Contact, 'id' | 'createdAt'>): Promise<string> {

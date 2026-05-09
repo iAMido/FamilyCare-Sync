@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AdminStackParamList } from '../../navigation/AppTabs';
+import { VaultStackParamList } from '../../navigation/AppTabs';
 import { Contact, ContactRole } from '../../types/Contact';
 import { createContact, updateContact } from '../../services/firestoreService';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-type Nav = StackNavigationProp<AdminStackParamList, 'ContactForm'>;
-type Route = RouteProp<AdminStackParamList, 'ContactForm'>;
+type Nav = StackNavigationProp<VaultStackParamList, 'ContactForm'>;
+type Route = RouteProp<VaultStackParamList, 'ContactForm'>;
 
 const ROLES: ContactRole[] = [
   'oncologist', 'gp', 'nurse', 'pharmacist',
