@@ -13,6 +13,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { getTreatmentById, updateTreatment } from '../../services/firestoreService';
+import { cancelCalendarEvent } from '../../services/functionsService';
 import { useAuth } from '../../hooks/useAuth';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Colors } from '../../constants/colors';
@@ -60,7 +61,12 @@ export function TreatmentDetailScreen() {
         text: 'Cancel Appointment',
         style: 'destructive',
         onPress: async () => {
-          await updateTreatment(treatmentId, { status: 'cancelled' });
+          try {
+            await cancelCalendarEvent(treatmentId);
+          } catch (err) {
+            console.error('cancelCalendarEvent failed, falling back', err);
+            await updateTreatment(treatmentId, { status: 'cancelled' });
+          }
           await loadData();
         },
       },
