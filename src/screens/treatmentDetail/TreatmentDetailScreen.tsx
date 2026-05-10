@@ -60,14 +60,13 @@ export function TreatmentDetailScreen() {
       {
         text: 'Cancel Appointment',
         style: 'destructive',
-        onPress: async () => {
-          try {
-            await cancelCalendarEvent(treatmentId);
-          } catch (err) {
-            console.error('cancelCalendarEvent failed, falling back', err);
-            await updateTreatment(treatmentId, { status: 'cancelled' });
-          }
-          await loadData();
+        onPress: () => {
+          updateTreatment(treatmentId, { status: 'cancelled' })
+            .then(() => loadData())
+            .catch((err) => {
+              console.error('Cancel failed', err);
+              Alert.alert('Error', 'Could not cancel appointment.');
+            });
         },
       },
     ]);
