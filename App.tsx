@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { LanguageProvider } from './src/contexts/LanguageContext';
+import { FamilyProvider } from './src/contexts/FamilyContext';
 
 interface ErrorState { error: Error | null }
 
@@ -35,9 +36,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <LanguageProvider>
-        <GestureHandlerRootView style={styles.root}>
-          <RootNavigator />
-        </GestureHandlerRootView>
+        <FamilyProvider>
+          <GestureHandlerRootView style={styles.root}>
+            <RootNavigator />
+          </GestureHandlerRootView>
+        </FamilyProvider>
       </LanguageProvider>
     </ErrorBoundary>
   );

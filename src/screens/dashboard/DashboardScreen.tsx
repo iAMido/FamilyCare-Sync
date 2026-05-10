@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
 import { useTreatments } from '../../hooks/useTreatments';
 import { useAuth } from '../../hooks/useAuth';
+import { useFamily } from '../../contexts/FamilyContext';
 import { updateTreatment } from '../../services/firestoreService';
 import { NextTreatmentCard } from './NextTreatmentCard';
 import { TreatmentCard } from '../../components/treatment/TreatmentCard';
@@ -21,7 +20,6 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { Colors } from '../../constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/spacing';
-import { AppUser } from '../../types/User';
 import { Treatment } from '../../types/Treatment';
 import { DashboardStackParamList } from '../../navigation/AppTabs';
 import dayjs from 'dayjs';
@@ -33,16 +31,8 @@ export function DashboardScreen() {
   const { state } = useAuth();
   const user = state.status === 'authenticated' ? state.user : null;
   const { treatments, upcoming, nextTreatment, loading, error } = useTreatments();
-  const [familyMap, setFamilyMap] = useState<Record<string, string>>({});
+  const { familyMap } = useFamily();
   const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    getDocs(collection(db, 'users')).then((snap) => {
-      const map: Record<string, string> = {};
-      snap.forEach((d) => { map[d.id] = d.data().displayName ?? d.id; });
-      setFamilyMap(map);
-    });
-  }, []);
 
   async function handleRefresh() {
     setRefreshing(true);

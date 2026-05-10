@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,12 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { db } from '../../config/firebase';
 import { useAuth } from '../../hooks/useAuth';
+import { useFamily } from '../../contexts/FamilyContext';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
-import { AppUser } from '../../types/User';
 import { EMAIL_WHITELIST } from '../../constants/emailWhitelist';
 import { SettingsStackParamList } from '../../navigation/AppTabs';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -29,13 +27,7 @@ export function FamilyScreen() {
   const { state, logout } = useAuth();
   const { t, locale, setLocale } = useLanguage();
   const user = state.status === 'authenticated' ? state.user : null;
-  const [members, setMembers] = useState<AppUser[]>([]);
-
-  useEffect(() => {
-    getDocs(collection(db, 'users')).then((snap) => {
-      setMembers(snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<AppUser, 'uid'>) })));
-    });
-  }, []);
+  const { members } = useFamily();
 
   function confirmLogout() {
     Alert.alert(

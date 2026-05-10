@@ -6,27 +6,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Platform,
   Linking,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
 import { getTreatmentById, updateTreatment, deleteTreatment } from '../../services/firestoreService';
-// cancelCalendarEvent removed — delete uses Firestore directly; onTreatmentDelete CF handles calendar cleanup
 import { useAuth } from '../../hooks/useAuth';
+import { useFamily } from '../../contexts/FamilyContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
-import { Treatment } from '../../types/Treatment';
-import { AppUser } from '../../types/User';
+import { Treatment, SideEffect } from '../../types/Treatment';
 import { DashboardStackParamList } from '../../navigation/AppTabs';
 import dayjs from 'dayjs';
 import { PostVisitSummary } from './PostVisitSummary';
 import { EscortManager } from './EscortManager';
 import { EditTreatmentScreen } from './EditTreatmentScreen';
 import { SideEffectLogger } from './SideEffectLogger';
-import { SideEffect } from '../../types/Treatment';
 
 type TreatmentDetailRouteProp = RouteProp<DashboardStackParamList, 'TreatmentDetail'>;
 
@@ -36,19 +31,15 @@ export function TreatmentDetailScreen() {
   const { treatmentId } = route.params;
   const { state } = useAuth();
   const user = state.status === 'authenticated' ? state.user : null;
+  const { members: family } = useFamily();
 
   const [treatment, setTreatment] = useState<Treatment | null>(null);
-  const [family, setFamily] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
 
   async function loadData() {
-    const [t, famSnap] = await Promise.all([
-      getTreatmentById(treatmentId),
-      getDocs(collection(db, 'users')),
-    ]);
+    const t = await getTreatmentById(treatmentId);
     setTreatment(t);
-    setFamily(famSnap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<AppUser, 'uid'>) })));
     setLoading(false);
   }
 
