@@ -9,38 +9,30 @@ import dayjs from 'dayjs';
 export const onTreatmentCreate = functions.onDocumentCreated(
   { document: 'treatments/{treatmentId}', secrets: [GOOGLE_SA_KEY, RESEND_API_KEY] },
   async (event) => {
+    const treatmentId = event.params.treatmentId;
+    logger.info(`onTreatmentCreate fired for ${treatmentId}`);
+
     const data = event.data?.data();
-    if (!data) return;
+    if (!data) {
+      logger.warn(`No data for treatment ${treatmentId}`);
+      return;
+    }
 
     const treatment: TreatmentData = {
-      id: event.params.treatmentId,
+      id: treatmentId,
       title: data.title,
       location: data.location,
       dateTime: data.dateTime as Timestamp,
-      escortId: data.escortId,
+      escortId: data.escortId ?? null,
     };
 
     const db = getFirestore();
-    const ref = db.collection('treatments').doc(treatment.id);
+    const ref = db.collection('treatments').doc(treatmentId);
     const dt = dayjs(treatment.dateTime.toDate());
 
-    // Create Google Calendar event
+    // 1. Send email FIRST — most reliable step
     try {
-      const calendarEventId = await createCalendarEvent(treatment, GOOGLE_SA_KEY.value());
-      await ref.update({ calendarEventId });
-    } catch (err) {
-      logger.error('Calendar sync failed', err);
-    }
-
-    // Push notification to all family
-    await notifyAllFamily(
-      '📅 תור חדש נקבע',
-      `${treatment.title} — ${dt.format('dddd, D MMM')} בשעה ${dt.format('HH:mm')}`,
-      { treatmentId: treatment.id, screen: 'TreatmentDetail' }
-    );
-
-    // Email all family members
-    try {
+      logger.info(`Sending family email for treatment ${treatmentId}`);
       await sendFamilyEmail(
         `📅 תור חדש: ${treatment.title}`,
         `
@@ -52,8 +44,32 @@ export const onTreatmentCreate = functions.onDocumentCreated(
         `,
         RESEND_API_KEY.value()
       );
+      logger.info(`Email sent for treatment ${treatmentId}`);
     } catch (err) {
-      logger.error('Email send failed', err);
+      logger.error(`Email send failed for ${treatmentId}`, err);
     }
+
+    // 2. Create Google Calendar event
+    try {
+      logger.info(`Creating calendar event for treatment ${treatmentId}`);
+      const calendarEventId = await createCalendarEvent(treatment, GOOGLE_SA_KEY.value());
+      await ref.update({ calendarEventId });
+      logger.info(`Calendar event created: ${calendarEventId} for treatment ${treatmentId}`);
+    } catch (err) {
+      logger.error(`Calendar sync failed for ${treatmentId}`, err);
+    }
+
+    // 3. Push notification — least critical, always wrapped
+    try {
+      await notifyAllFamily(
+        '📅 תור חדש נקבע',
+        `${treatment.title} — ${dt.format('dddd, D MMM')} בשעה ${dt.format('HH:mm')}`,
+        { treatmentId: treatment.id, screen: 'TreatmentDetail' }
+      );
+    } catch (err) {
+      logger.error(`FCM notification failed for ${treatmentId}`, err);
+    }
+
+    logger.info(`onTreatmentCreate complete for ${treatmentId}`);
   }
 );

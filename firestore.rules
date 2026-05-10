@@ -13,13 +13,19 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
-      allow delete: if false; // soft-delete only via status: cancelled
+      allow delete: if isAuthenticated();
     }
 
-    // presets: read-only for all family members
+    // presets: all authenticated family members can read and write
     match /presets/{presetId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      allow write: if isAuthenticated();
+    }
+
+    // contacts: all authenticated family members can read and write
+    match /contacts/{contactId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     // users: readable by all family members, writable only by the owning uid

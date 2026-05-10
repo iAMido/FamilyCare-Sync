@@ -13,7 +13,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { getTreatmentById, updateTreatment, deleteTreatment } from '../../services/firestoreService';
-import { cancelCalendarEvent } from '../../services/functionsService';
+// cancelCalendarEvent removed — delete uses Firestore directly; onTreatmentDelete CF handles calendar cleanup
 import { useAuth } from '../../hooks/useAuth';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Colors } from '../../constants/colors';
@@ -87,13 +87,15 @@ export function TreatmentDetailScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            // Try to remove calendar event via callable (handles calendarEventId cleanup)
-            try { await cancelCalendarEvent(treatmentId); } catch (_) {}
-            // Then hard-delete the Firestore doc
-            // (onTreatmentDelete cloud trigger will catch any remaining calendar event)
-            await deleteTreatment(treatmentId);
-            navigation.goBack();
+          onPress: () => {
+            // Delete the Firestore doc — onTreatmentDelete Cloud Function
+            // will automatically remove the Google Calendar event.
+            deleteTreatment(treatmentId)
+              .then(() => navigation.goBack())
+              .catch((err) => {
+                console.error('Delete failed', err);
+                Alert.alert('Error', 'Could not delete appointment. Please try again.');
+              });
           },
         },
       ]
@@ -265,8 +267,9 @@ export function TreatmentDetailScreen() {
         )}
 
         {/* Delete — always available */}
+        <View style={styles.deleteSeparator} />
         <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-          <Text style={styles.deleteBtnText}>🗑 Delete Appointment</Text>
+          <Text style={styles.deleteBtnText}>🗑  Delete Appointment</Text>
         </TouchableOpacity>
 
         <View style={{ height: Spacing.xxl }} />
@@ -468,20 +471,24 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.semibold,
     color: Colors.error,
   },
+  deleteSeparator: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
   deleteBtn: {
     marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    paddingVertical: 12,
+    marginBottom: Spacing.md,
+    paddingVertical: 14,
     alignItems: 'center',
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    borderColor: Colors.error + '30',
-    backgroundColor: Colors.error + '08',
+    backgroundColor: Colors.error,
   },
   deleteBtnText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
-    color: Colors.error,
-    opacity: 0.8,
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: '#fff',
   },
 });
