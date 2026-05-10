@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
+  Platform,
   Linking,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -55,21 +55,15 @@ export function TreatmentDetailScreen() {
   useEffect(() => { loadData(); }, [treatmentId]);
 
   async function handleCancel() {
-    Alert.alert('Cancel Appointment', 'Are you sure you want to cancel?', [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Cancel Appointment',
-        style: 'destructive',
-        onPress: () => {
-          updateTreatment(treatmentId, { status: 'cancelled' })
-            .then(() => loadData())
-            .catch((err) => {
-              console.error('Cancel failed', err);
-              Alert.alert('Error', 'Could not cancel appointment.');
-            });
-        },
-      },
-    ]);
+    const confirmed = window.confirm('Are you sure you want to cancel this appointment?');
+    if (!confirmed) return;
+    try {
+      await updateTreatment(treatmentId, { status: 'cancelled' });
+      await loadData();
+    } catch (err) {
+      console.error('Cancel failed', err);
+      window.alert('Could not cancel appointment.');
+    }
   }
 
   async function handleComplete() {
@@ -78,27 +72,17 @@ export function TreatmentDetailScreen() {
   }
 
   async function handleDelete() {
-    Alert.alert(
-      'Delete Appointment',
-      'This will permanently delete the appointment and remove it from the shared calendar. This cannot be undone.',
-      [
-        { text: 'Keep', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            // Delete the Firestore doc — onTreatmentDelete Cloud Function
-            // will automatically remove the Google Calendar event.
-            deleteTreatment(treatmentId)
-              .then(() => navigation.goBack())
-              .catch((err) => {
-                console.error('Delete failed', err);
-                Alert.alert('Error', 'Could not delete appointment. Please try again.');
-              });
-          },
-        },
-      ]
+    const confirmed = window.confirm(
+      'This will permanently delete the appointment and remove it from the shared calendar. This cannot be undone.'
     );
+    if (!confirmed) return;
+    try {
+      await deleteTreatment(treatmentId);
+      navigation.goBack();
+    } catch (err) {
+      console.error('Delete failed', err);
+      window.alert('Could not delete appointment. Please try again.');
+    }
   }
 
   if (loading || !treatment) return <LoadingSpinner />;
