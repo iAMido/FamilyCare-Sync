@@ -12,7 +12,7 @@ import {
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { getTreatmentById, updateTreatment } from '../../services/firestoreService';
+import { getTreatmentById, updateTreatment, deleteTreatment } from '../../services/firestoreService';
 import { cancelCalendarEvent } from '../../services/functionsService';
 import { useAuth } from '../../hooks/useAuth';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -76,6 +76,28 @@ export function TreatmentDetailScreen() {
   async function handleComplete() {
     await updateTreatment(treatmentId, { status: 'completed' });
     await loadData();
+  }
+
+  async function handleDelete() {
+    Alert.alert(
+      'Delete Appointment',
+      'This will permanently delete the appointment and remove it from the shared calendar. This cannot be undone.',
+      [
+        { text: 'Keep', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // Try to remove calendar event via callable (handles calendarEventId cleanup)
+            try { await cancelCalendarEvent(treatmentId); } catch (_) {}
+            // Then hard-delete the Firestore doc
+            // (onTreatmentDelete cloud trigger will catch any remaining calendar event)
+            await deleteTreatment(treatmentId);
+            navigation.goBack();
+          },
+        },
+      ]
+    );
   }
 
   if (loading || !treatment) return <LoadingSpinner />;
@@ -241,6 +263,11 @@ export function TreatmentDetailScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Delete — always available */}
+        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+          <Text style={styles.deleteBtnText}>🗑 Delete Appointment</Text>
+        </TouchableOpacity>
 
         <View style={{ height: Spacing.xxl }} />
       </ScrollView>
@@ -440,5 +467,21 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: Colors.error,
+  },
+  deleteBtn: {
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.error + '30',
+    backgroundColor: Colors.error + '08',
+  },
+  deleteBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.error,
+    opacity: 0.8,
   },
 });

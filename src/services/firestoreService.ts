@@ -89,6 +89,10 @@ export async function updateTreatment(id: string, patch: Partial<Treatment>): Pr
   await updateDoc(ref, rest);
 }
 
+export async function deleteTreatment(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'treatments', id));
+}
+
 export async function getTreatmentById(id: string): Promise<Treatment | null> {
   const snap = await getDoc(doc(db, 'treatments', id));
   if (!snap.exists()) return null;

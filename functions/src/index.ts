@@ -14,6 +14,7 @@ initializeApp();
 
 export { onTreatmentCreate } from './onTreatmentCreate';
 export { onTreatmentUpdate } from './onTreatmentUpdate';
+export { onTreatmentDelete } from './onTreatmentDelete';
 export { scheduledReminders } from './scheduledReminders';
 
 /**
