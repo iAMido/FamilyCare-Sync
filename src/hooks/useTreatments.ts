@@ -30,6 +30,12 @@ export function useTreatments() {
             createdAt:
               data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
             createdBy: data.createdBy,
+            protocolGroupId: data.protocolGroupId ?? null,
+            protocolRole: data.protocolRole ?? undefined,
+            cycleNumber: data.cycleNumber ?? null,
+            cycleTotal: data.cycleTotal ?? null,
+            sideEffects: data.sideEffects ?? [],
+            reminders: data.reminders ?? [],
           };
         });
         setTreatments(items);

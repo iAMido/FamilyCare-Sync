@@ -36,6 +36,7 @@ function treatmentFromFirestore(id: string, data: Record<string, any>): Treatmen
     cycleNumber: data.cycleNumber ?? null,
     cycleTotal: data.cycleTotal ?? null,
     sideEffects: data.sideEffects ?? [],
+    reminders: data.reminders ?? [],
   };
 }
 
