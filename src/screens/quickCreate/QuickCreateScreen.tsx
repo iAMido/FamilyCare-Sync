@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
+  StyleSheet, SafeAreaView, ActivityIndicator,
 } from 'react-native';
 import { DatePickerModal } from '../../components/common/DatePickerModal';
+import { showAlert } from '../../utils/alert';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { usePresets } from '../../hooks/usePresets';
@@ -135,7 +136,7 @@ export function QuickCreateScreen() {
       triggerCalendarSync(mainId).catch(() => {});
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to create appointment.');
+      showAlert('Error', err.message ?? 'Failed to create appointment.');
       setSaving(false);
     }
   }

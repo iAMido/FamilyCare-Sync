@@ -5,9 +5,9 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { SideEffect, SideEffectSeverity } from '../../types/Treatment';
+import { showConfirm } from '../../utils/alert';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -53,14 +53,8 @@ export function SideEffectLogger({ sideEffects, onChange, readonly }: SideEffect
   }
 
   function handleDelete(id: string) {
-    Alert.alert('Remove', 'Remove this side effect?', [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('delete'),
-        style: 'destructive',
-        onPress: () => onChange(sideEffects.filter((e) => e.id !== id)),
-      },
-    ]);
+    const ok = showConfirm('Remove', 'Remove this side effect?');
+    if (ok) onChange(sideEffects.filter((e) => e.id !== id));
   }
 
   return (

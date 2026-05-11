@@ -6,7 +6,6 @@ import {
   StyleSheet,
   SafeAreaView,
   FlatList,
-  Alert,
   Linking,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -18,6 +17,7 @@ import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { showConfirm } from '../../utils/alert';
 
 // Note: ContactsScreen is superseded by VaultScreen. Kept for reference only.
 type Nav = StackNavigationProp<VaultStackParamList, 'VaultHome'>;
@@ -52,21 +52,9 @@ export function ContactsScreen() {
   useFocusEffect(useCallback(() => { load(); }, []));
 
   function handleDelete(contact: Contact) {
-    Alert.alert(
-      contact.name,
-      'Delete this contact?',
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('delete'),
-          style: 'destructive',
-          onPress: async () => {
-            await deleteContact(contact.id);
-            load();
-          },
-        },
-      ]
-    );
+    const ok = showConfirm(contact.name, 'Delete this contact?');
+    if (!ok) return;
+    deleteContact(contact.id).then(() => load()).catch(() => {});
   }
 
   if (loading) return <LoadingSpinner />;

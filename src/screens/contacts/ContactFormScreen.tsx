@@ -7,7 +7,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -56,7 +55,7 @@ export function ContactFormScreen() {
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert(t('required_field'), t('contact_name'));
+      window.alert(t('contact_name') || 'Please enter a name.');
       return;
     }
     setSaving(true);
@@ -76,6 +75,9 @@ export function ContactFormScreen() {
         await createContact(data);
       }
       navigation.goBack();
+    } catch (err: any) {
+      console.error('Contact save error:', err);
+      window.alert('Error: ' + (err.message || 'Failed to save contact.'));
     } finally {
       setSaving(false);
     }

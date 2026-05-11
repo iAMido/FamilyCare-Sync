@@ -6,12 +6,12 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../hooks/useAuth';
 import { useFamily } from '../../contexts/FamilyContext';
+import { showConfirm } from '../../utils/alert';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { EMAIL_WHITELIST } from '../../constants/emailWhitelist';
@@ -30,14 +30,8 @@ export function FamilyScreen() {
   const { members } = useFamily();
 
   function confirmLogout() {
-    Alert.alert(
-      t('sign_out_confirm'),
-      t('sign_out_confirm_msg'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        { text: t('sign_out'), style: 'destructive', onPress: logout },
-      ]
-    );
+    const ok = showConfirm(t('sign_out_confirm'), t('sign_out_confirm_msg'));
+    if (ok) logout();
   }
 
   const initials = (name: string) =>

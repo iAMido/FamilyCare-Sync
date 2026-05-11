@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, SafeAreaView, Alert,
+  StyleSheet, SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePresets } from '../../hooks/usePresets';
 import { deletePreset } from '../../services/firestoreService';
+import { showConfirm } from '../../utils/alert';
 import { Colors, DotColors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
 import { Preset } from '../../types/Preset';
@@ -20,23 +21,12 @@ export function PresetManagementScreen() {
   const { presets, loading } = usePresets();
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  function confirmDelete(preset: Preset) {
-    Alert.alert(
-      `Delete "${preset.name}"?`,
-      'This will not affect existing appointments, but this preset type will no longer be available.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(preset.id);
-            await deletePreset(preset.id);
-            setDeleting(null);
-          },
-        },
-      ]
-    );
+  async function confirmDelete(preset: Preset) {
+    const ok = showConfirm(`Delete "${preset.name}"?`, 'This will not affect existing appointments, but this preset type will no longer be available.');
+    if (!ok) return;
+    setDeleting(preset.id);
+    await deletePreset(preset.id);
+    setDeleting(null);
   }
 
   if (loading) return <LoadingSpinner />;

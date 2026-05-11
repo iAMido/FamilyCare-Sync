@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
+  StyleSheet, SafeAreaView, ActivityIndicator,
 } from 'react-native';
 import { DatePickerModal } from '../../components/common/DatePickerModal';
 import { updateTreatment } from '../../services/firestoreService';
+import { showAlert } from '../../utils/alert';
 import { Treatment } from '../../types/Treatment';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
@@ -26,7 +27,7 @@ export function EditTreatmentScreen({ treatment, onDone }: Props) {
 
   async function handleSave() {
     if (!title.trim()) {
-      Alert.alert('Title required', 'Please enter a title for the appointment.');
+      showAlert('Title required', 'Please enter a title for the appointment.');
       return;
     }
     setSaving(true);
@@ -34,7 +35,7 @@ export function EditTreatmentScreen({ treatment, onDone }: Props) {
       await updateTreatment(treatment.id, { title: title.trim(), location: location.trim(), dateTime: date });
       onDone();
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to update appointment.');
+      showAlert('Error', err.message ?? 'Failed to update appointment.');
       setSaving(false);
     }
   }

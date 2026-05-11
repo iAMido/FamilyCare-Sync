@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { AppUser } from '../types/User';
 
 interface FamilyState {
@@ -23,26 +24,50 @@ export function FamilyProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'users'),
-      (snap) => {
-        const users: AppUser[] = snap.docs.map((d) => ({
-          uid: d.id,
-          ...(d.data() as Omit<AppUser, 'uid'>),
-        }));
-        const map: Record<string, string> = {};
-        users.forEach((u) => { map[u.uid] = u.displayName ?? u.uid; });
+    // Wait for auth before starting the Firestore listener
+    let unsubFirestore: (() => void) | null = null;
 
-        setMembers(users);
-        setFamilyMap(map);
-        setLoading(false);
-      },
-      (err) => {
-        console.error('Family snapshot error:', err);
-        setLoading(false);
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      // Clean up previous Firestore listener
+      if (unsubFirestore) {
+        unsubFirestore();
+        unsubFirestore = null;
       }
-    );
-    return unsubscribe;
+
+      if (!user) {
+        // Not authenticated — clear family data
+        setMembers([]);
+        setFamilyMap({});
+        setLoading(false);
+        return;
+      }
+
+      // Authenticated — start Firestore listener
+      unsubFirestore = onSnapshot(
+        collection(db, 'users'),
+        (snap) => {
+          const users: AppUser[] = snap.docs.map((d) => ({
+            uid: d.id,
+            ...(d.data() as Omit<AppUser, 'uid'>),
+          }));
+          const map: Record<string, string> = {};
+          users.forEach((u) => { map[u.uid] = u.displayName ?? u.uid; });
+
+          setMembers(users);
+          setFamilyMap(map);
+          setLoading(false);
+        },
+        (err) => {
+          console.error('Family snapshot error:', err);
+          setLoading(false);
+        }
+      );
+    });
+
+    return () => {
+      unsubAuth();
+      if (unsubFirestore) unsubFirestore();
+    };
   }, []);
 
   return (

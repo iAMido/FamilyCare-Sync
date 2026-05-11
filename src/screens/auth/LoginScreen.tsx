@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   ScrollView,
 } from 'react-native';
 import {
@@ -20,6 +19,7 @@ import { auth } from '../../config/firebase';
 import { EMAIL_WHITELIST } from '../../constants/emailWhitelist';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
+import { showAlert } from '../../utils/alert';
 
 type Mode = 'login' | 'register';
 
@@ -33,7 +33,7 @@ export function LoginScreen() {
 
   function checkWhitelist(): boolean {
     if (!EMAIL_WHITELIST.includes(trimmedEmail)) {
-      Alert.alert('Not authorized', 'This email is not part of the family group.');
+      showAlert('Not authorized', 'This email is not part of the family group.');
       return false;
     }
     return true;
@@ -41,7 +41,7 @@ export function LoginScreen() {
 
   async function handleLogin() {
     if (!trimmedEmail || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.');
+      showAlert('Missing fields', 'Please enter your email and password.');
       return;
     }
     if (!checkWhitelist()) return;
@@ -49,7 +49,7 @@ export function LoginScreen() {
     try {
       await signInWithEmailAndPassword(auth, trimmedEmail, password);
     } catch (err: any) {
-      Alert.alert('Sign-in failed', friendlyError(err.code));
+      showAlert('Sign-in failed', friendlyError(err.code));
     } finally {
       setLoading(false);
     }
@@ -57,11 +57,11 @@ export function LoginScreen() {
 
   async function handleRegister() {
     if (!trimmedEmail || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and a password.');
+      showAlert('Missing fields', 'Please enter your email and a password.');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Weak password', 'Password must be at least 6 characters.');
+      showAlert('Weak password', 'Password must be at least 6 characters.');
       return;
     }
     if (!checkWhitelist()) return;
@@ -69,7 +69,7 @@ export function LoginScreen() {
     try {
       await createUserWithEmailAndPassword(auth, trimmedEmail, password);
     } catch (err: any) {
-      Alert.alert('Registration failed', friendlyError(err.code));
+      showAlert('Registration failed', friendlyError(err.code));
     } finally {
       setLoading(false);
     }
@@ -77,15 +77,15 @@ export function LoginScreen() {
 
   async function handleForgotPassword() {
     if (!trimmedEmail) {
-      Alert.alert('Enter your email first', 'Type your email above, then tap Forgot Password.');
+      showAlert('Enter your email first', 'Type your email above, then tap Forgot Password.');
       return;
     }
     if (!checkWhitelist()) return;
     try {
       await sendPasswordResetEmail(auth, trimmedEmail);
-      Alert.alert('Email sent', `Password reset link sent to ${trimmedEmail}`);
+      showAlert('Email sent', `Password reset link sent to ${trimmedEmail}`);
     } catch {
-      Alert.alert('Error', 'Could not send reset email. Try again.');
+      showAlert('Error', 'Could not send reset email. Try again.');
     }
   }
 

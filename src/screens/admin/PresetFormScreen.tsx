@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, Alert, ActivityIndicator,
+  StyleSheet, SafeAreaView, ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { usePresets } from '../../hooks/usePresets';
@@ -64,7 +64,7 @@ export function PresetFormScreen() {
   }
 
   async function handleSave() {
-    if (!name.trim()) { Alert.alert('Required', 'Please enter a name.'); return; }
+    if (!name.trim()) { window.alert('Please enter a name.'); return; }
     setSaving(true);
     try {
       const parsedCycles = parseInt(totalCycles) || 0;
@@ -85,7 +85,8 @@ export function PresetFormScreen() {
       }
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      console.error('Preset save error:', err);
+      window.alert('Error: ' + (err.message || 'Failed to save.'));
     } finally {
       setSaving(false);
     }

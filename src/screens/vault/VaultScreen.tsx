@@ -6,13 +6,13 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert,
   Linking,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { VaultStackParamList } from '../../navigation/AppTabs';
 import { Contact, ContactRole } from '../../types/Contact';
+import { showConfirm } from '../../utils/alert';
 import { getContacts, deleteContact } from '../../services/firestoreService';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSize, FontWeight } from '../../constants/spacing';
@@ -58,17 +58,10 @@ export function VaultScreen() {
   );
 
   function confirmDelete(contact: Contact) {
-    Alert.alert(contact.name, t('delete') + '?', [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('delete'),
-        style: 'destructive',
-        onPress: async () => {
-          await deleteContact(contact.id).catch(() => {});
-          setContacts((c) => c.filter((x) => x.id !== contact.id));
-        },
-      },
-    ]);
+    const ok = showConfirm(contact.name, t('delete') + '?');
+    if (!ok) return;
+    deleteContact(contact.id).catch(() => {});
+    setContacts((c) => c.filter((x) => x.id !== contact.id));
   }
 
   return (
