@@ -63,11 +63,11 @@ export function ContactFormScreen() {
       const data: Omit<Contact, 'id' | 'createdAt'> = {
         name: name.trim(),
         role,
-        phone: phone.trim() || undefined,
-        email: email.trim() || undefined,
-        hospital: hospital.trim() || undefined,
-        department: department.trim() || undefined,
-        notes: notes.trim() || undefined,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        hospital: hospital.trim() || null,
+        department: department.trim() || null,
+        notes: notes.trim() || null,
       };
       if (isEditing && existing) {
         await updateContact(existing.id, data);

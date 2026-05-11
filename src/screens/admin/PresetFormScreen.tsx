@@ -75,7 +75,7 @@ export function PresetFormScreen() {
         automatedReminders: reminders,
         protocol: protocolSteps.length > 0
           ? { steps: protocolSteps.filter((s) => s.presetId) }
-          : undefined,
+          : null,
         totalCycles: parsedCycles > 0 ? parsedCycles : null,
       };
       if (existing) {

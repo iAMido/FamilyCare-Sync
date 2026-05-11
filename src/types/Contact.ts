@@ -12,10 +12,10 @@ export interface Contact {
   id: string;
   name: string;
   role: ContactRole;
-  phone?: string;
-  email?: string;
-  hospital?: string;
-  department?: string;
-  notes?: string;
+  phone?: string | null;
+  email?: string | null;
+  hospital?: string | null;
+  department?: string | null;
+  notes?: string | null;
   createdAt?: Date;
 }

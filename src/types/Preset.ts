@@ -20,7 +20,7 @@ export interface Preset {
   /** If set, scheduling this preset will offer to auto-create linked appointments */
   protocol?: {
     steps: ProtocolStep[];
-  };
+  } | null;
   /** If set, the patient is going through N cycles (e.g. 6 chemo cycles) */
   totalCycles?: number | null;
 }
