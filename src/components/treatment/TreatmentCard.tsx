@@ -72,6 +72,11 @@ export function TreatmentCard({ treatment, escortName, onPress, dotColorIndex = 
               </Text>
             </View>
           )}
+          {(treatment.reminders?.length ?? 0) > 0 && (
+            <View style={styles.reminderChip}>
+              <Text style={styles.reminderText}>🔔 {treatment.reminders!.length}</Text>
+            </View>
+          )}
           {escortName ? (
             <View style={styles.escortChip}>
               <View style={styles.escortDot} />
@@ -232,5 +237,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.warning,
     fontWeight: FontWeight.medium,
+  },
+  reminderChip: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: Colors.primaryBg,
+  },
+  reminderText: {
+    fontSize: FontSize.xs,
+    color: Colors.primary,
+    fontWeight: FontWeight.semibold,
   },
 });

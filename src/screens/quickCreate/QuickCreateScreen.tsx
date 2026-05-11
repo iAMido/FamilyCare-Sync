@@ -87,6 +87,9 @@ export function QuickCreateScreen() {
     setSaving(true);
     try {
       const hasCycles = (selectedPreset.totalCycles ?? 0) > 0;
+      const activeReminders = selectedPreset.automatedReminders.filter(
+        (r) => enabledReminders[r.offsetHours]
+      );
       const mainData = {
         presetId: selectedPreset.id,
         title: selectedPreset.name + (hasCycles ? ` (C${cycleNumber}/${selectedPreset.totalCycles})` : ''),
@@ -96,6 +99,7 @@ export function QuickCreateScreen() {
         summary: null,
         createdBy: user.uid,
         ...(hasCycles ? { cycleNumber, cycleTotal: selectedPreset.totalCycles } : {}),
+        ...(activeReminders.length > 0 ? { reminders: activeReminders.map((r) => ({ offsetHours: r.offsetHours, message: r.message })) } : {}),
       };
 
       let mainId: string;
@@ -123,9 +127,6 @@ export function QuickCreateScreen() {
       }
 
       // Schedule local reminders for the main appointment
-      const activeReminders = selectedPreset.automatedReminders.filter(
-        (r) => enabledReminders[r.offsetHours]
-      );
       for (const reminder of activeReminders) {
         await scheduleLocalReminder(
           { id: mainId, title: selectedPreset.name, dateTime: date } as any,

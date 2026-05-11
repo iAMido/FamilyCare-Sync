@@ -192,6 +192,24 @@ export function TreatmentDetailScreen() {
           </View>
         </View>
 
+        {/* Reminders section */}
+        {(treatment.reminders?.length ?? 0) > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Reminders</Text>
+            <View style={styles.remindersList}>
+              {treatment.reminders!.map((r, i) => (
+                <View key={i} style={styles.reminderItem}>
+                  <Text style={styles.reminderIcon}>🔔</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reminderTime}>{Math.abs(r.offsetHours)}h before</Text>
+                    <Text style={styles.reminderMsg}>{r.message}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Escort section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Escort</Text>
@@ -415,6 +433,33 @@ const styles = StyleSheet.create({
   },
   sideEffectsSection: {
     marginBottom: Spacing.md,
+  },
+  remindersList: {
+    gap: Spacing.sm,
+  },
+  reminderItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primaryBg,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primary + '25',
+  },
+  reminderIcon: {
+    fontSize: 16,
+    marginTop: 1,
+  },
+  reminderTime: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textPrimary,
+  },
+  reminderMsg: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
   // Actions
   actions: {

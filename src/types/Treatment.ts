@@ -6,6 +6,12 @@ export interface TreatmentSummary {
   updatedAt?: Date;
 }
 
+/** A reminder saved on the treatment (copied from the preset at creation time) */
+export interface TreatmentReminder {
+  offsetHours: number;   // negative = before the appointment
+  message: string;
+}
+
 export interface Treatment {
   id: string;
   presetId: string;
@@ -28,6 +34,8 @@ export interface Treatment {
   cycleTotal?: number | null;
   /** side effects logged after the appointment */
   sideEffects?: SideEffect[];
+  /** reminders attached to this appointment (copied from preset at creation time) */
+  reminders?: TreatmentReminder[];
 }
 
 export type SideEffectSeverity = 'mild' | 'moderate' | 'severe';
